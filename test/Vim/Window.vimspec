@@ -1,0 +1,215 @@
+Describe Vim.Window
+  After all
+    %bwipeout!
+  End
+
+  Before
+    let Window = healthcheck#vital#import('Vim.Window')
+    %bwipeout!
+  End
+
+  Describe .focus_window({expr} [, {options}])
+    Context {options.range} is 'tabpage'
+      It returns v:null when no corresponding window of {expr} is found
+        let guard = Window.focus_window(0)
+        Assert Same(guard, v:null)
+
+        let guard = Window.focus_window(2)
+        Assert Same(guard, v:null)
+
+        let guard = Window.focus_window('#')
+        Assert Same(guard, v:null)
+      End
+
+      It returns v:null when no corresponding window of {expr} is found in a current tabpage
+        edit foo1
+        split foo2
+        tabnew foo3
+
+        let guard = Window.focus_window(2)
+        Assert Same(guard, v:null)
+      End
+
+      It focuses to a corresponding window of {expr} and returns a guard instance
+        edit foo1
+        split foo2
+        Assert Equals(bufname('%'), 'foo2')
+        Assert Equals(winnr(), 1)
+
+        let guard = Window.focus_window(2)
+        Assert Equals(bufname('%'), 'foo1')
+        Assert Equals(winnr(), 2)
+        Assert KeyExists(guard, 'restore')
+        Assert IsFunction(guard.restore)
+
+        call guard.restore()
+        Assert Equals(bufname('%'), 'foo2', 'focus is required to be restored.')
+        Assert Equals(winnr(), 1, 'focus is required to be restored.')
+
+        let guard = Window.focus_window('#')
+        Assert Equals(bufname('%'), 'foo1')
+        Assert Equals(winnr(), 2)
+        Assert KeyExists(guard, 'restore')
+        Assert IsFunction(guard.restore)
+
+        call guard.restore()
+        Assert Equals(bufname('%'), 'foo2', 'focus is required to be restored.')
+        Assert Equals(winnr(), 1, 'focus is required to be restored.')
+      End
+
+      It does nothing if a corresponding window of {expr} is already focused
+        edit foo1
+        split foo2
+        Assert Equals(bufname('%'), 'foo2')
+        Assert Equals(winnr(), 1)
+
+        let guard = Window.focus_window(1)
+        Assert Equals(bufname('%'), 'foo2')
+        Assert Equals(winnr(), 1)
+        Assert KeyExists(guard, 'restore')
+        Assert IsFunction(guard.restore)
+
+        call guard.restore()
+        Assert Equals(bufname('%'), 'foo2', 'focus should not be changed.')
+        Assert Equals(winnr(), 1, 'focus should not be changed.')
+      End
+    End
+
+    Context {options.range} is 'all'
+      It focuses to a corresponding window of {expr} in a differnt tabpage and returns a guard instance
+        edit foo1
+        split foo2
+        tabnew foo3
+        Assert Equals(bufname('%'), 'foo3')
+        Assert Equals(winnr(), 1)
+        Assert Equals(tabpagenr(), 2)
+
+        let guard = Window.focus_window(2, {'range': 'all'})
+        Assert NotSame(guard, v:null)
+        Assert Equals(bufname('%'), 'foo1')
+        Assert Equals(winnr(), 2)
+        Assert Equals(tabpagenr(), 1)
+        Assert KeyExists(guard, 'restore')
+        Assert IsFunction(guard.restore)
+
+        call guard.restore()
+        Assert Equals(bufname('%'), 'foo3', 'focus is required to be restored.')
+        Assert Equals(winnr(), 1, 'focus is required to be restored.')
+        Assert Equals(tabpagenr(), 2, 'focus is required to be restored.')
+      End
+    End
+  End
+
+  Describe .focus_buffer({expr} [, {options}])
+    Context {options.range} is 'tabpage'
+      It returns v:null when no corresponding buffer of {expr} is found
+        edit foo1
+        let guard = Window.focus_buffer(bufnr('%') + 1)
+        Assert Same(guard, v:null)
+
+        let guard = Window.focus_buffer('unknown buffer')
+        Assert Same(guard, v:null)
+      End
+
+      It returns v:null when no window which opens a corresponding buffer of {expr} is found
+        edit foo1
+        edit foo2
+        let guard = Window.focus_buffer(bufnr('foo1'))
+        Assert Same(guard, v:null)
+
+        let guard = Window.focus_buffer('foo1')
+        Assert Same(guard, v:null)
+      End
+
+      It returns v:null when no window which opens a corresponding buffer of {expr} is found in a current tabpage
+        edit foo1
+        split foo2
+        tabnew foo3
+        let guard = Window.focus_buffer(bufnr('foo1'))
+        Assert Same(guard, v:null)
+
+        let guard = Window.focus_buffer('foo1')
+        Assert Same(guard, v:null)
+      End
+
+      It focuses to a window which opens a corresponding buffer of {expr} and return a guard instance
+        edit foo1
+        split foo2
+        Assert Equals(bufname('%'), 'foo2')
+
+        let guard = Window.focus_buffer(bufnr('foo1'))
+        Assert Equals(bufname('%'), 'foo1')
+        Assert KeyExists(guard, 'restore')
+        Assert IsFunction(guard.restore)
+
+        call guard.restore()
+        Assert Equals(bufname('%'), 'foo2', 'focus is required to be restored.')
+
+        let guard = Window.focus_buffer('foo1')
+        Assert Equals(bufname('%'), 'foo1')
+        Assert KeyExists(guard, 'restore')
+        Assert IsFunction(guard.restore)
+
+        call guard.restore()
+        Assert Equals(bufname('%'), 'foo2', 'focus is required to be restored.')
+      End
+
+      It does nothing if a window which opens a corresponding buffer of {expr} is already focused
+        edit foo1
+        split foo2
+        Assert Equals(bufname('%'), 'foo2')
+
+        let guard = Window.focus_buffer(bufnr('foo2'))
+        Assert Equals(bufname('%'), 'foo2')
+        Assert KeyExists(guard, 'restore')
+        Assert IsFunction(guard.restore)
+
+        call guard.restore()
+        Assert Equals(bufname('%'), 'foo2', 'focus should not be changed.')
+
+        let guard = Window.focus_buffer('foo2')
+        Assert Equals(bufname('%'), 'foo2')
+        Assert KeyExists(guard, 'restore')
+        Assert IsFunction(guard.restore)
+
+        call guard.restore()
+        Assert Equals(bufname('%'), 'foo2', 'focus should not be changed.')
+      End
+    End
+
+    Context {options.range} is 'all'
+      It focuses to a window which opens a corresponding buffer of {expr} in a different tabpage and return a guard instance
+        edit foo1
+        split foo2
+        tabnew foo3
+        Assert Equals(bufname('%'), 'foo3')
+        Assert Equals(winnr(), 1)
+        Assert Equals(tabpagenr(), 2)
+
+        let guard = Window.focus_buffer(bufnr('foo1'), {'range': 'all'})
+        Assert Equals(bufname('%'), 'foo1')
+        Assert Equals(winnr(), 2)
+        Assert Equals(tabpagenr(), 1)
+        Assert KeyExists(guard, 'restore')
+        Assert IsFunction(guard.restore)
+
+        call guard.restore()
+        Assert Equals(bufname('%'), 'foo3', 'focus is required to be restored.')
+        Assert Equals(winnr(), 1, 'focus is required to be restored.')
+        Assert Equals(tabpagenr(), 2, 'focus is required to be restored.')
+
+        let guard = Window.focus_buffer('foo1', {'range': 'all'})
+        Assert Equals(bufname('%'), 'foo1')
+        Assert Equals(winnr(), 2)
+        Assert Equals(tabpagenr(), 1)
+        Assert KeyExists(guard, 'restore')
+        Assert IsFunction(guard.restore)
+
+        call guard.restore()
+        Assert Equals(bufname('%'), 'foo3', 'focus is required to be restored.')
+        Assert Equals(winnr(), 1, 'focus is required to be restored.')
+        Assert Equals(tabpagenr(), 2, 'focus is required to be restored.')
+      End
+    End
+  End
+End

@@ -1,0 +1,77 @@
+Describe Config
+  Before all
+    let Guard = vital#vital#import('Vim.Guard')
+  End
+
+  Before
+    let Config = healthcheck#vital#import('Config')
+    let guard = Guard.store([
+          \ 'g:vital#foo',
+          \ 'g:vital#bar',
+          \ 'g:vital#hello#foo',
+          \ 'g:vital#hello#bar',
+          \])
+  End
+
+  After
+    call guard.restore()
+  End
+
+  Describe .define({prefix}, {defaults})
+    It defines 'g:{prefix}#{key}' variables
+      let defaults = {
+            \ 'foo': 'bar',
+            \ 'bar': 0,
+            \}
+      let ret = Config.define('g:vital#hello', defaults)
+      Assert exists('g:vital#hello#foo')
+      Assert exists('g:vital#hello#bar')
+
+      Assert Equals(g:vital#hello#foo, defaults.foo)
+      Assert Equals(g:vital#hello#bar, defaults.bar)
+    End
+
+    It will not overwrite the existing variables
+      let defaults = {
+            \ 'foo': 'bar',
+            \ 'bar': 0,
+            \}
+      let g:vital#foo = 'hello'
+      let g:vital#bar = 1
+      let ret = Config.define('g:vital', defaults)
+      Assert exists('g:vital#foo')
+      Assert exists('g:vital#bar')
+
+      Assert Equals(g:vital#foo, 'hello')
+      Assert Equals(g:vital#bar, 1)
+    End
+  End
+
+  Describe .translate({scriptfile})
+    It translates {scriptfile} into a global variable name
+      let ret = Config.translate(fnamemodify('autoload/vital.vim', ':p'))
+      Assert Equals(ret, 'g:vital')
+
+      let ret = Config.translate(fnamemodify('autoload/vital/foo.vim', ':p'))
+      Assert Equals(ret, 'g:vital#foo')
+
+      let ret = Config.translate(fnamemodify('autoload/vital/foo/bar.vim', ':p'))
+      Assert Equals(ret, 'g:vital#foo#bar')
+    End
+  End
+
+  Describe .config({scriptfile}, {defaults})
+    It define 'g:{prefix}#{key}' variables
+      let defaults = {
+            \ 'foo': 'bar',
+            \ 'bar': 0,
+            \}
+      let ret = Config.config(fnamemodify('autoload/vital/hello.vim', ':p'), defaults)
+      Assert exists('g:vital#hello#foo')
+      Assert exists('g:vital#hello#bar')
+
+      Assert Equals(g:vital#hello#foo, defaults.foo)
+      Assert Equals(g:vital#hello#bar, defaults.bar)
+    End
+  End
+End

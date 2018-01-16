@@ -1,0 +1,339 @@
+Describe Vim.Console
+  Before all
+    function! TestVitalVimConsoleTrue() abort
+      return 1
+    endfunction
+
+    function! TestVitalVimConsoleFalse() abort
+      return 0
+    endfunction
+
+    function! s:messages() abort
+      let contents = filter(split(execute('messages'), '\r\?\n'), '!empty(v:val)')
+      " Remove a title console if exists
+      if get(contents, 0, '') =~# '^Messages maintainer:'
+        return contents[1:]
+      else
+        return contents
+      endif
+    endfunction
+  End
+
+  After all
+    delfunction TestVitalVimConsoleTrue
+    delfunction TestVitalVimConsoleFalse
+  End
+
+  Before
+    let Console = healthcheck#vital#import('Vim.Console')
+    let Console.prefix = ''
+    message clear
+    set verbose&
+  End
+
+  Describe .echo({msg}[, {hl}])
+    It echo a {msg}
+      let contents = execute([
+            \ 'call Console.echo("foo\nbar")',
+            \ 'call Console.echo("foo\nbar")',
+            \], '')
+      Assert Equals(split(contents, '\r\?\n'), ['foo', 'bar', 'foo', 'bar'])
+      let messages = s:messages()
+      Assert Equals(messages, [])
+    End
+
+    It echo a {msg} with {prefix}
+      let Console.prefix = '[prefix] '
+      let contents = execute([
+            \ 'call Console.echo("foo\nbar")',
+            \ 'call Console.echo("foo\nbar")',
+            \], '')
+      Assert Equals(split(contents, '\r\?\n'), [
+            \ '[prefix] foo',
+            \ '[prefix] bar',
+            \ '[prefix] foo',
+            \ '[prefix] bar',
+            \])
+      let messages = s:messages()
+      Assert Equals(messages, [])
+    End
+  End
+
+  Describe .echon({msg}[, {hl}])
+    It echon a {msg}
+      let contents = execute([
+            \ 'redraw | call Console.echon("foo\nbar")',
+            \ 'call Console.echon("foo\nbar")',
+            \ 'echo ""'
+            \], '')
+      Assert Equals(split(contents, '\r\?\n'), ['foo', 'barfoo', 'bar'])
+      let messages = s:messages()
+      Assert Equals(messages, [])
+    End
+
+    It echon a {msg} without {prefix}
+      let Console.prefix = '[prefix] '
+      let contents = execute([
+            \ 'redraw | call Console.echon("foo\nbar")',
+            \ 'call Console.echon("foo\nbar")',
+            \ 'echo ""'
+            \], '')
+      Assert Equals(split(contents, '\r\?\n'), ['foo', 'barfoo', 'bar'])
+      let messages = s:messages()
+      Assert Equals(messages, [])
+    End
+  End
+
+  Describe .echomsg({hl} [, {msg}...])
+    It echomsg a {msg}
+      let contents = execute([
+            \ 'call Console.echomsg("foo\nbar")',
+            \ 'call Console.echomsg("foo\nbar")',
+            \], '')
+      Assert Equals(split(contents, '\r\?\n'), ['foo', 'bar', 'foo', 'bar'])
+      let messages = s:messages()
+      Assert Equals(messages, ['foo', 'bar', 'foo', 'bar'])
+    End
+
+    It echomsg a {msg} with {prefix}
+      let Console.prefix = '[prefix] '
+      let contents = execute([
+            \ 'call Console.echomsg("foo\nbar")',
+            \ 'call Console.echomsg("foo\nbar")',
+            \], '')
+      Assert Equals(split(contents, '\r\?\n'), [
+            \ '[prefix] foo',
+            \ '[prefix] bar',
+            \ '[prefix] foo',
+            \ '[prefix] bar',
+            \])
+      let messages = s:messages()
+      Assert Equals(messages, [
+            \ '[prefix] foo',
+            \ '[prefix] bar',
+            \ '[prefix] foo',
+            \ '[prefix] bar',
+            \])
+    End
+  End
+
+  Describe .input({hl}, {msg}[, {text}, {complete}])
+    It returns a given string
+      call timer_start(0, { -> feedkeys('Hello World' . "\<CR>", 't') })
+      Assert Equals(Console.input('None', 'foo'), 'Hello World')
+    End
+
+    It returns an empty string if user hit <CR> immediately
+      call timer_start(0, { -> feedkeys("\<CR>", 't') })
+      Assert Equals(Console.input('None', 'foo'), '')
+    End
+
+    It returns 0 if user hit <Esc>
+      call timer_start(0, { -> feedkeys('Hello World' . "\<Esc>", 't') })
+      Assert Equals(Console.input('None', 'foo'), 0)
+    End
+  End
+
+  Describe .inputlist({hl}, {textlist})
+    Before
+      if has('nvim')
+        Skip Neovim has a bug on inputlist() https://github.com/neovim/neovim/issues/7857
+      endif
+    End
+
+    It returns a selected index
+      call timer_start(0, { -> feedkeys('1' . "\<CR>", 't') })
+      Assert Equals(Console.inputlist('None', ['foo', 'bar']), 1)
+      call timer_start(0, { -> feedkeys('2' . "\<CR>", 't') })
+      Assert Equals(Console.inputlist('None', ['foo', 'bar']), 2)
+    End
+
+    It returns a given number
+      call timer_start(0, { -> feedkeys('100' . "\<CR>", 't') })
+      Assert Equals(Console.inputlist('None', ['foo', 'bar']), 100)
+    End
+
+    It returns 0 if nothing has given
+      call timer_start(0, { -> feedkeys("\<CR>", 't') })
+      Assert Equals(Console.inputlist('None', ['foo', 'bar']), 0)
+    End
+
+    It returns 0 if non number has given
+      call timer_start(0, { -> feedkeys('Hello World' . "\<CR>", 't') })
+      Assert Equals(Console.inputlist('None', ['foo', 'bar']), 0)
+    End
+  End
+
+  Describe .debug({msg})
+    It echomsg messages when &verbose > 0
+      let contents = execute('verbose call Console.debug(''foo bar'')', '')
+      Assert Equals(split(contents, '\r\?\n'), ['foo bar'])
+
+      let messages = s:messages()
+      Assert Equals(messages, ['foo bar'])
+    End
+
+    It does nothing otherwise
+      let contents = execute('call Console.debug(''foo bar'')', '')
+      Assert Equals(split(contents, '\r\?\n'), [])
+
+      let messages = s:messages()
+      Assert Equals(messages, [])
+    End
+  End
+
+  Describe .info({msg})
+    It echomsg a message
+      let contents = execute('call Console.info("foo bar")', '')
+      Assert Equals(split(contents, '\r\?\n'), ['foo bar'])
+
+      let messages = s:messages()
+      Assert Equals(messages, ['foo bar'])
+    End
+
+    It sets v:statusmsg
+      call Console.info('foo bar')
+      Assert Equals(v:statusmsg, 'foo bar')
+    End
+  End
+
+  Describe .warn({msg})
+    It echomsg a message
+      let contents = execute('call Console.warn("foo bar")', '')
+      Assert Equals(split(contents, '\r\?\n'), ['foo bar'])
+
+      let messages = s:messages()
+      Assert Equals(messages, ['foo bar'])
+    End
+
+    It sets v:warningmsg
+      call Console.warn('foo bar')
+      Assert Equals(v:warningmsg, 'foo bar')
+    End
+  End
+
+  Describe .error({msg})
+    It echomsg a message
+      let contents = execute('call Console.error("foo bar")', '')
+      Assert Equals(split(contents, '\r\?\n'), ['foo bar'])
+
+      let messages = s:messages()
+      Assert Equals(messages, ['foo bar'])
+    End
+
+    It sets v:errmsg
+      call Console.error('foo bar')
+      Assert Equals(v:errmsg, 'foo bar')
+    End
+  End
+
+  Describe .ask({msg}[, {text}, {complete}])
+    It returns a given string
+      call timer_start(0, { -> feedkeys('Hello World' . "\<CR>", 't') })
+      Assert Equals(Console.ask('foo'), 'Hello World')
+    End
+
+    It returns an empty string if user hit <CR> immediately
+      call timer_start(0, { -> feedkeys("\<CR>", 't') })
+      Assert Equals(Console.ask('foo'), '')
+    End
+
+    It returns 0 if user hit <Esc>
+      call timer_start(0, { -> feedkeys('Hello World' . "\<Esc>", 't') })
+      Assert Equals(Console.ask('foo'), 0)
+    End
+  End
+
+  Describe .select({msg}, {candidates}[, {canceled}])
+    Before
+      if has('nvim')
+        Skip Neovim has a bug on inputlist() https://github.com/neovim/neovim/issues/7857
+      endif
+    End
+
+    It returns a selected candidate string
+      call timer_start(0, { -> feedkeys('1' . "\<CR>", 't') })
+      Assert Equals(Console.select('hello', ['foo', 'bar']), 'foo')
+      call timer_start(0, { -> feedkeys('2' . "\<CR>", 't') })
+      Assert Equals(Console.select('hello', ['foo', 'bar']), 'bar')
+    End
+
+    It returns {cancel} if index out of range
+      call timer_start(0, { -> feedkeys('3' . "\<CR>", 't') })
+      Assert Equals(Console.select('hello', ['foo', 'bar']), '')
+      call timer_start(0, { -> feedkeys('100' . "\<CR>", 't') })
+      Assert Equals(Console.select('hello', ['foo', 'bar']), '')
+    End
+
+    It returns {cancel} if nothing has given
+      call timer_start(0, { -> feedkeys("\<CR>", 't') })
+      Assert Equals(Console.select('hello', ['foo', 'bar']), '')
+      call timer_start(0, { -> feedkeys("\<CR>", 't') })
+      Assert Equals(Console.select('hello', ['foo', 'bar'], 0), 0)
+    End
+
+    It returns {cancel} if non number has given
+      call timer_start(0, { -> feedkeys('Hello World' . "\<CR>", 't') })
+      Assert Equals(Console.select('hello', ['foo', 'bar']), '')
+      call timer_start(0, { -> feedkeys('Hello World' . "\<CR>", 't') })
+      Assert Equals(Console.select('hello', ['foo', 'bar'], 0), 0)
+    End
+  End
+
+  Describe .confirm({msg}[, {text}])
+    It returns 1 if user answer y/ye/yes
+      call timer_start(0, { -> feedkeys('y' . "\<CR>", 't') })
+      Assert Equals(Console.confirm('foo'), 1)
+      call timer_start(0, { -> feedkeys('Y' . "\<CR>", 't') })
+      Assert Equals(Console.confirm('foo'), 1)
+      call timer_start(0, { -> feedkeys('ye' . "\<CR>", 't') })
+      Assert Equals(Console.confirm('foo'), 1)
+      call timer_start(0, { -> feedkeys('Ye' . "\<CR>", 't') })
+      Assert Equals(Console.confirm('foo'), 1)
+      call timer_start(0, { -> feedkeys('YE' . "\<CR>", 't') })
+      Assert Equals(Console.confirm('foo'), 1)
+      call timer_start(0, { -> feedkeys('yes' . "\<CR>", 't') })
+      Assert Equals(Console.confirm('foo'), 1)
+      call timer_start(0, { -> feedkeys('Yes' . "\<CR>", 't') })
+      Assert Equals(Console.confirm('foo'), 1)
+      call timer_start(0, { -> feedkeys('YES' . "\<CR>", 't') })
+      Assert Equals(Console.confirm('foo'), 1)
+    End
+
+    It returns 0 if user answer n/no
+      call timer_start(0, { -> feedkeys('n' . "\<CR>", 't') })
+      Assert Equals(Console.confirm('foo'), 0)
+      call timer_start(0, { -> feedkeys('N' . "\<CR>", 't') })
+      Assert Equals(Console.confirm('foo'), 0)
+      call timer_start(0, { -> feedkeys('no' . "\<CR>", 't') })
+      Assert Equals(Console.confirm('foo'), 0)
+      call timer_start(0, { -> feedkeys('No' . "\<CR>", 't') })
+      Assert Equals(Console.confirm('foo'), 0)
+      call timer_start(0, { -> feedkeys('NO' . "\<CR>", 't') })
+      Assert Equals(Console.confirm('foo'), 0)
+    End
+
+    It returns 0 if user hit <Esc>
+      call timer_start(0, { -> feedkeys('y' . "\<Esc>", 't') })
+      Assert Equals(Console.confirm('foo'), 0)
+    End
+
+    It uses {default} to determine 1/0 if user hit <CR> immediately
+      call timer_start(0, { -> feedkeys("\<CR>", 't') })
+      Assert Equals(Console.confirm('foo', 'y'), 1)
+      call timer_start(0, { -> feedkeys("\<CR>", 't') })
+      Assert Equals(Console.confirm('foo', 'n'), 0)
+    End
+
+    It repeats asking until user answer y/n
+      call timer_start(0, { -> feedkeys('a' . "\<CR>", 't') })
+      call timer_start(0, { -> feedkeys('b' . "\<CR>", 't') })
+      call timer_start(0, { -> feedkeys('y' . "\<CR>", 't') })
+      Assert Equals(Console.confirm('foo'), 1)
+      call timer_start(0, { -> feedkeys('a' . "\<CR>", 't') })
+      call timer_start(0, { -> feedkeys('b' . "\<CR>", 't') })
+      call timer_start(0, { -> feedkeys('n' . "\<CR>", 't') })
+      Assert Equals(Console.confirm('foo'), 0)
+    End
+  End
+End

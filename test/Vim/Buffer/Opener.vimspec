@@ -1,0 +1,248 @@
+Describe Vim.Buffer.Opener
+  After all
+    %bwipeout!
+  End
+
+  Before
+    let Opener = healthcheck#vital#import('Vim.Buffer.Opener')
+    %bwipeout!
+  End
+
+  Describe .open()
+    Context Without {group}
+      Before
+        let config = {}
+        let saved_splitbelow = &splitbelow
+        let saved_splitright = &splitright
+        set nosplitbelow
+        set nosplitright
+      End
+
+      After
+        let &splitbelow = saved_splitbelow
+        let &splitright = saved_splitright
+      End
+
+      It opens a new {buffer} without {opener}
+        let context = Opener.open('foo', config)
+        Assert Equals(context.preview, 0)
+        Assert Equals(context.bufloaded, 0)
+        Assert Equals(context.bufexists, 0)
+        Assert Equals(context.bufnr, bufnr('%'))
+        Assert Equals(context.bufname, 'foo')
+        Assert Equals(winnr('$'), 1)
+        Assert Equals(bufname('%'), 'foo')
+
+        let context = Opener.open('bar', config)
+        Assert Equals(context.preview, 0)
+        Assert Equals(context.bufloaded, 0)
+        Assert Equals(context.bufexists, 0)
+        Assert Equals(context.bufnr, bufnr('%'))
+        Assert Equals(context.bufname, 'bar')
+        Assert Equals(winnr('$'), 1)
+        Assert Equals(bufname('%'), 'bar')
+
+        " context.end() does nothing
+        call context.end()
+        Assert Equals(winnr('$'), 1)
+        Assert Equals(bufname('%'), 'bar')
+      End
+
+      It opens a new {buffer} with {opener}
+        let config.opener = 'split'
+        let context = Opener.open('foo', config)
+        Assert Equals(context.preview, 0)
+        Assert Equals(context.bufloaded, 0)
+        Assert Equals(context.bufexists, 0)
+        Assert Equals(context.bufnr, bufnr('%'))
+        Assert Equals(context.bufname, 'foo')
+        Assert Equals(winnr('$'), 2)
+        Assert Equals(bufname('%'), 'foo')
+        Assert Equals(bufwinnr(context.bufnr), 1)
+
+        let context = Opener.open('bar', config)
+        Assert Equals(context.preview, 0)
+        Assert Equals(context.bufloaded, 0)
+        Assert Equals(context.bufexists, 0)
+        Assert Equals(context.bufnr, bufnr('%'))
+        Assert Equals(context.bufname, 'bar')
+        Assert Equals(winnr('$'), 3)
+        Assert Equals(bufname('%'), 'bar')
+
+        " context.end() does nothing
+        call context.end()
+        Assert Equals(winnr('$'), 3)
+        Assert Equals(bufname('%'), 'bar')
+      End
+
+      It opens a new {buffer} with {mods} {opener}
+        let config.mods = 'botright'
+        let config.opener = 'split'
+        let context = Opener.open('foo', config)
+        Assert Equals(context.preview, 0)
+        Assert Equals(context.bufloaded, 0)
+        Assert Equals(context.bufexists, 0)
+        Assert Equals(context.bufnr, bufnr('%'))
+        Assert Equals(context.bufname, 'foo')
+        Assert Equals(winnr('$'), 2)
+        Assert Equals(bufname('%'), 'foo')
+        Assert Equals(bufwinnr(context.bufnr), 2)
+
+        let context = Opener.open('bar', config)
+        Assert Equals(context.preview, 0)
+        Assert Equals(context.bufloaded, 0)
+        Assert Equals(context.bufexists, 0)
+        Assert Equals(context.bufnr, bufnr('%'))
+        Assert Equals(context.bufname, 'bar')
+        Assert Equals(winnr('$'), 3)
+        Assert Equals(bufname('%'), 'bar')
+
+        " context.end() does nothing
+        call context.end()
+        Assert Equals(winnr('$'), 3)
+        Assert Equals(bufname('%'), 'bar')
+      End
+
+      It opens a new {buffer} with {opener} for 'preview'
+        let config.opener = 'split'
+        let context = Opener.open('foo', config)
+        Assert Equals(context.preview, 0)
+        Assert Equals(context.bufloaded, 0)
+        Assert Equals(context.bufexists, 0)
+        Assert Equals(context.bufnr, bufnr('%'))
+        Assert Equals(context.bufname, 'foo')
+        Assert Equals(winnr('$'), 2)
+        Assert Equals(bufname('%'), 'foo')
+        Assert Equals(&previewwindow, 0)
+
+        let config.opener = 'pedit'
+        let context = Opener.open('bar', config)
+        Assert NotEquals(context.preview, 0)
+        Assert Equals(context.bufloaded, 0)
+        Assert Equals(context.bufexists, 0)
+        Assert Equals(context.bufnr, bufnr('%'))
+        Assert Equals(context.bufname, 'bar')
+        Assert Equals(winnr('$'), 3)
+        Assert Equals(bufname('%'), 'bar')
+        Assert Equals(&previewwindow, 1)
+
+        " context.end() move focus back
+        call context.end()
+        Assert Equals(winnr('$'), 3)
+        Assert Equals(bufname('%'), 'foo')
+        Assert Equals(&previewwindow, 0)
+      End
+
+      It focus an existing {buffer}
+        call Opener.open('foo')
+        call Opener.open('bar')
+        let config.opener = 'split'
+        let context = Opener.open('foo', config)
+        Assert Equals(context.preview, 0)
+        Assert Equals(context.bufloaded, 0)
+        Assert Equals(context.bufexists, 1)
+        Assert Equals(context.bufnr, bufnr('%'))
+        Assert Equals(context.bufname, 'foo')
+        Assert Equals(winnr('$'), 2)
+        Assert Equals(bufname('%'), 'foo')
+
+        let config.opener = ''
+        let context = Opener.open('bar', config)
+        Assert Equals(context.preview, 0)
+        Assert Equals(context.bufloaded, 1)
+        Assert Equals(context.bufexists, 1)
+        Assert Equals(context.bufnr, bufnr('%'))
+        Assert Equals(context.bufname, 'bar')
+        Assert Equals(winnr('$'), 2)
+        Assert Equals(bufname('%'), 'bar')
+      End
+    End
+
+    Context With {group}
+      Before
+        let config = { 'group': 'test' }
+      End
+
+      It opens a new {buffer} without {opener}
+        let context = Opener.open('foo', config)
+        Assert Equals(context.preview, 0)
+        Assert Equals(context.bufloaded, 0)
+        Assert Equals(context.bufexists, 0)
+        Assert Equals(context.bufnr, bufnr('%'))
+        Assert Equals(context.bufname, 'foo')
+        Assert Equals(winnr('$'), 1)
+        Assert Equals(bufname('%'), 'foo')
+
+        let context = Opener.open('bar', config)
+        Assert Equals(context.preview, 0)
+        Assert Equals(context.bufloaded, 0)
+        Assert Equals(context.bufexists, 0)
+        Assert Equals(context.bufnr, bufnr('%'))
+        Assert Equals(context.bufname, 'bar')
+        Assert Equals(winnr('$'), 1)
+        Assert Equals(bufname('%'), 'bar')
+
+        " context.end() does nothing
+        call context.end()
+        Assert Equals(winnr('$'), 1)
+        Assert Equals(bufname('%'), 'bar')
+      End
+
+      It opens a new {buffer} with {opener}
+        let config.opener = 'split'
+        let context = Opener.open('foo', config)
+        Assert Equals(context.preview, 0)
+        Assert Equals(context.bufloaded, 0)
+        Assert Equals(context.bufexists, 0)
+        Assert Equals(context.bufnr, bufnr('%'))
+        Assert Equals(context.bufname, 'foo')
+        Assert Equals(winnr('$'), 2)
+        Assert Equals(bufname('%'), 'foo')
+
+        " NOTE: An existing {group} is used so it won't use {opener}
+        let config.opener = 'split'
+        let context = Opener.open('bar', config)
+        Assert Equals(context.preview, 0)
+        Assert Equals(context.bufloaded, 0)
+        Assert Equals(context.bufexists, 0)
+        Assert Equals(context.bufnr, bufnr('%'))
+        Assert Equals(context.bufname, 'bar')
+        Assert Equals(winnr('$'), 2)
+        Assert Equals(bufname('%'), 'bar')
+
+        " context.end() does nothing
+        call context.end()
+        Assert Equals(winnr('$'), 2)
+        Assert Equals(bufname('%'), 'bar')
+      End
+
+      It opens a new {buffer} with {opener} for preview
+        let config.opener = 'split'
+        let context = Opener.open('foo', config)
+        Assert Equals(context.preview, 0)
+        Assert Equals(context.bufloaded, 0)
+        Assert Equals(context.bufexists, 0)
+        Assert Equals(context.bufnr, bufnr('%'))
+        Assert Equals(context.bufname, 'foo')
+        Assert Equals(winnr('$'), 2)
+        Assert Equals(bufname('%'), 'foo')
+
+        " NOTE: An {opener} for preview is specified so {group} is ignored.
+        let config.opener = 'pedit'
+        let context = Opener.open('bar', config)
+        Assert Equals(context.preview, 1)
+        Assert Equals(context.bufloaded, 0)
+        Assert Equals(context.bufexists, 0)
+        Assert Equals(context.bufnr, bufnr('%'))
+        Assert Equals(context.bufname, 'bar')
+        Assert Equals(winnr('$'), 3)
+        Assert Equals(bufname('%'), 'bar')
+
+        " context.end() focus back
+        call context.end()
+        Assert Equals(winnr('$'), 3)
+        Assert Equals(bufname('%'), 'foo')
+      End
+    End
+  End
+End

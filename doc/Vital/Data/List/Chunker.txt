@@ -1,0 +1,94 @@
+*vital-data-list-chunker.txt*	Split a large list into several chunks
+
+Author : Alisue <lambdalisue@hashnote.net>
+License: MIT license
+Support: Vim 8.0.0001 and above
+Support: Neovim 0.2.0 and above
+
+
+=============================================================================
+CONTENTS			*Vital.Data.List.Chunker-contents*
+
+INTRODUCTION			|Vital.Data.List.Chunker-introduction|
+INTERFACE			|Vital.Data.List.Chunker-interface|
+
+
+=============================================================================
+INTRODUCTION			*Vital.Data.List.Chunker-introduction*
+
+*Vital.Data.List.Chunker* is a module to split a large list into small chunks.
+For example, the following code split a large list into small chunks to
+improve the initial response.
+>
+	let s:Chunker = vital#vital#import('Data.List.Chunker')
+
+	function! Test() abort
+	  let candidates = range(1000)
+	  let chunker = Chunker.new(10, candidates)
+	  let chunker.bufnum = bufnr('%')
+
+	  if exists('s:timer_id')
+	    call timer_stop(s:timer_id)
+	  endif
+	  let s:timer_id = timer_start(
+	        \ 0,
+	        \ function('s:timer_callback', [chunker])
+	        \)
+	endfunction
+
+	function! s:timer_callback(chunker, timer_id) abort
+	  if a:chunker.bufnum != bufnr('%')
+	    " The focus has moved to a differnt bufferso stop iteration.
+	    return
+	  endif
+
+	  let candidates = a:chunker.next()
+	  if empty(candidates)
+	    " There is no candidate left. Stop iteration.
+	    return
+	  endif
+
+	  let candidates = map(a:chunker.next(), 's:parse_candidate(v:val)')
+	  call append(line('$'), candidates)
+	  let s:timer_id = timer_start(
+	        \ 100,
+	        \ function('s:timer_callback', [chunker])
+	        \)
+	endfunction
+
+	function! s:parse_candidate(candidate) abort
+	  " Assume that parsing is a really heavy process
+	  sleep 1m
+	  return string(a:candidate)
+	endfunction
+<
+Without chunker, it requires approx. 1000 x 1 ms to get the initial
+response. Using chunker reduce this initial response to approx. 10 x 1 ms so
+users would feel that the response has improved.
+Note that the total procession time would become longer with chunker.
+
+
+=============================================================================
+INTERFACE			*Vital.Data.List.Chunker-interface*
+
+			*Vital.Data.List.Chunker.new()*
+.new({chunk_size}, {candidates})
+	Returns a new chunker instance.
+
+			*Vital.Data.List.Chunker-instance.next()*
+chunker.next()
+	Returns a next chunk. It returns an empty list when there are no
+	candidate left so the following code iterate all chunks.
+>
+	let chunk = chunker.next()
+	while !empty(chunk)
+	  for candidate in chunk
+	    " Do something more useful!
+	    echo candidate
+	  endfor
+	  let chunk = chunker.next()
+	endwhile
+<
+
+=============================================================================
+vim:tw=78:fo=tcq2mM:ts=8:ft=help:norl

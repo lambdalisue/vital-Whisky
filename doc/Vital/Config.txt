@@ -1,0 +1,74 @@
+*Vital/Config.txt*		Define default variables
+
+Author : Alisue <lambdalisue@hashnote.net>
+License: MIT license
+Support: Vim 8.0.0001 and above
+Support: Neovim 0.2.0 and above
+
+
+==============================================================================
+CONTENTS				*Vital.Config-contents*
+
+INTRODUCTION			|Vital.Config-introduction|
+FUNCTION			|Vital.Config-function|
+
+
+==============================================================================
+INTRODUCTION				*Vital.Config-introduction*
+
+*Vital.Config* is a plugin to define default variables.
+>
+	let s:Config = vital#vital#import('Config')
+	
+	" Define the following only when the variable is missing
+	" - g:vital#foo#bar#foo = 1
+	" - g:vital#foo#bar#bar = 'bar'
+	" Useful to define default variables
+	call s:Config.define('vital#foo#bar', {
+	      \ 'foo': 1,
+	      \ 'bar': 'bar',
+	      \})
+
+	" Assign a corresponding variable name from <sfile>
+	call s:Config.config(expand('<sfile>:p'), {
+	      \ 'foo': 1,
+	      \ 'bar': 'bar',
+	      \})
+<
+
+Latest version:
+https://github.com/lambdalisue/vital-Config
+
+
+=============================================================================
+FUNCTION 				*Vital.Config-function*
+
+						*Vital.Config.define()*
+define({prefix}, {default})
+	Define missing values in a {default} dictionary as global variables.
+	When "g:" is missing from the {prefix}, it is automatically
+	prepended.
+
+						*Vital.Config.config()*
+config({scriptfile}, {default})
+	An alternative of |Vital.Config.define()|.
+	Developers can use <sfile> with ||expand()| to automatically use a
+	autoloadable variable name if they use exactly same name for the
+	path to the vital's plugin name.
+
+	For example, "g:gina#foo#bar" is used as a {prefix} if this module
+	is located as "autoload/vital/__gina__/Config.vim" and the script
+	is located as "autoload/gina/foo/bar.vim". Otherwise it may fail.
+	
+	Note that developers can confirm what name is used for a particular
+	scriptfile path with |Vital.Config.trasnlate()| method.
+
+						*Vital.Config.translate()*
+translate({scriptfile})
+	Return a corresponding variable name for the {scriptfile}.
+	It is mainly for debug use.
+	Note that the variable name of a scriptfile which is not located in
+	a plugin-name (of vital.vim) directory cannot be translated.
+
+==============================================================================
+vim:tw=78:fo=tcq2mM:ts=8:ft=help:norl

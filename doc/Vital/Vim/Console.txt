@@ -1,0 +1,152 @@
+*Vital/Vim/Console.txt*				echo/echomsg/input library
+
+Author : Alisue <lambdalisue@hashnote.net>
+License: MIT license
+Support: Vim 8.0.0001 and above
+Support: Neovim 0.2.0 and above
+
+
+==============================================================================
+CONTENTS				*Vital.Vim.Console-contents*
+
+INTRODUCTIONS			|Vital.Vim.Console-introductions|
+USAGE				|Vital.Vim.Console-usage|
+FUNCTIONS			|Vital.Vim.Console-functions|
+VARIABLES			|Vital.Vim.Console-variables|
+CHANGELOG			|Vital.Vim.Console-changelog|
+
+
+==============================================================================
+INTRODUCTIONS				*Vital.Vim.Console-introductions*
+
+This module provides several utility functions for message such as |echo|.
+The basic usage is something like:
+
+>
+	let s:Console = vital#vital#import('Vim.Console')
+
+	if s:Console.ask('Do you like Vim?')
+	  call s:Console.info('I knew')
+	else
+	  call s:Console.error('What did you say?')
+	endif
+<
+
+==============================================================================
+FUNCTIONS				*Vital.Vim.Console-functions*
+
+					*Vital.Vim.Console.echo()*
+echo({msg}[, {hl}])
+	Execute |:echo| with {hl} (|highlight-groups|).
+>
+	call s:Console.echo('a', 'None')
+	" a
+	call s:Console.echo("a\nb\nc", 'None')
+	" a
+	" b
+	" c
+	let s:Console.prefix = '[prefix] '
+	call s:Console.echo('a', 'None')
+	" [prefix] a
+	call s:Console.echo("a\nb\nc", 'None')
+	" [prefix] a
+	" [prefix] b
+	" [prefix] c
+<
+					*Vital.Vim.Console.echon()*
+echon({msg}[, {hl}])
+	Execute |:echon| with {hl} (|highlight-groups|).
+	Note that |Vital.Vim.Console.prefix| is not used for this method.
+	
+					*Vital.Vim.Console.echomsg()*
+echomsg({msg}[, {hl}])
+	Execute |:echomsg| with {hl} (|highlight-groups|).
+
+					*Vital.Vim.Console.input()*
+input({hl}, {msg}[, {text}, {completion}])
+	Execute |:input| with {hl} (|highlight-groups|).
+	|inputsave()| and |inputrestore()| are used internally to guard
+	typeahead.
+	Not like a native |input()|, the {completion} can be a |Funcref|
+	which returns a list. Refer to |:command-completion| for detail.
+	It returns 0 if users hit <Esc> to cancel.
+
+					*Vital.Vim.Console.inputlist()*
+inputlist({hl}, {textlist}])
+	Execute |:inputlist| with {hl} (|highlight-groups|).
+	|inputsave()| and |inputrestore()| are used internally to guard
+	typeahead.
+
+					*Vital.Vim.Console.debug()*
+debug({msg})
+	Echo {msg} by |:echomsg| with |hl-Comment| highlight group only when the
+	'verbose' option has set.
+
+					*Vital.Vim.Console.info()*
+info({msg})
+	Echo {msg} by |:echomsg| with |hl-Title| highlight group.
+	It assign {msg} to |v:statusmsg| as well.
+
+					*Vital.Vim.Console.warn()*
+warn({msg})
+	Echo {msg} by |:echomsg| with |hl-WarningMsg| highlight group.
+	It assign {msg} to |v:warningmsg| as well.
+
+					*Vital.Vim.Console.error()*
+error({msg})
+	Echo {msg} by |:echomsg| with |hl-ErrorMsg| highlight group.
+	It assign {msg} to |v:errmsg| as well.
+
+					*Vital.Vim.Console.ask()*
+ask({msg}[, {default}, {completion}])
+	Ask {msg} to users with |hl-Question| highlight group.
+
+					*Vital.Vim.Console.select()*
+select({msg}, {candidates}[, {canceled}])
+	Ask users to select one of the {candidates} with |hl-Question|
+	highlight group.
+	When user cancel, the value of {canceled} is returned.
+	When user input an invalid index, the value of {canceled} is
+	returned.
+
+					*Vital.Vim.Console.confirm()*
+confirm({msg}[, {default}])
+	Confirm yes/no question to users.
+	It returns 1 if users answered yes.
+	The {default} can be 'y\%[es]', 'n\%[o]', or an empty string.
+	This value is used when user hit <CR> without input anything.
+	It throws an exception when {default} is not one of the listed.
+
+
+==============================================================================
+VARIABLES				*Vital.Vim.Console-variables*
+
+					*Vital.Vim.Console.prefix*
+prefix
+	A prefix string used when message. An empty value i  assigned in
+	default.
+	
+					*Vital.Vim.Console.escape_marker*
+escape_marker
+	A constant string used to check if users hit <Esc> in a prompt.
+	Usually the default value is unique enough so developers do not need
+	to change the value.
+	Note that the value is used in |cnoremap| directly without escaping.
+
+
+==============================================================================
+CHANGELOG				*Vital.Vim.Console-changelog*
+
+1.0.0	2016-08-26
+	- Initial stable version
+1.1.0	2017-01-05
+	- Add info() method to document
+2.0.0	2017-01-12
+	- Change API interface
+3.0.0	2018-01-16
+	- Change minimum Vim/Neovim version
+	- Add unittests for methods which requires user input
+	- Remove obsolute methods/features
+
+==============================================================================
+vim:tw=78:fo=tcq2mM:ts=8:ft=help:norl

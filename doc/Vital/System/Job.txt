@@ -1,0 +1,249 @@
+*Vital/System/Job.txt*		A job wrapper for Vim and Neovim
+
+Author:  Alisue <lambdalisue@hashnote.net>
+License: MIT license
+Support: Vim 8.0.0027 and above (prefer 8.0.0107 and above)
+Support: Neovim 0.2.0 and above
+
+
+=============================================================================
+CONTENTS					*Vital.System.Job-contents*
+
+INTRODUCTION				|Vital.System.Job-introduction|
+USAGE					|Vital.System.Job-usage|
+  CALLBACKS				|Vital.System.Job-callbacks|
+  PROMISE				|Vital.System.Job-promise|
+FUNCTION				|Vital.System.Job-function|
+INSTANCE				|Vital.System.Job-instance|
+
+
+=============================================================================
+INTRODUCTION					*Vital.System.Job-introduction*
+
+*Vital.System.Job* is a module to provide a way to use a job feature of Vim
+and Neovim so that developers of Vim plugins do not need to write separate
+codes for Vim and Neovim.
+
+Note that prior to Vim 8.0.0027, |Vital.System.Job-instance.wait()| method
+enter infinity-loop so this library does not support.
+Note that prior to Vim 8.0.0107, the channel handling was different so
+it would have performance issues.
+
+
+=============================================================================
+USAGE						*Vital.System.Job-usage*
+
+Use |Vitalizer| to inject the module into your plugin like
+>
+	:Vitalize --name=plugin-name . +System.Job
+<
+Then import the module with |vital#{plugin-name}#import()| like
+>
+	let s:Job = vital#{plugin-name}#import('System.Job')
+<
+The following code start "git status" and store its' stdout/stderr output in
+the instance attribute.
+>
+	function! s:on_stdout(data) abort dict
+	  let self.stdout[-1] .= a:data[0]
+	  call extend(self.stdout, a:data[1:])
+	endfunction
+
+	function! s:on_stderr(data) abort dict
+	  let self.stderr[-1] .= a:data[0]
+	  call extend(self.stderr, a:data[1:])
+	endfunction
+
+	function! s:on_exit(exitval) abort dict
+	  let self.exit_status = a:exitval
+	endfunction
+
+	let job = s:Job.start(['git', 'status'], {
+	      \ 'stdout': [''],
+	      \ 'stderr': [''],
+	      \ 'exit_status': -1,
+	      \ 'on_stdout': function('on_stdout'),
+	      \ 'on_stderr': function('on_stderr'),
+	      \ 'on_exit': function('on_exit'),
+	      \})
+<
+Note that this module DO NOT change the handling of "data" by operating
+system, mean that you may need to normalize "\r" which may appear on each
+end of line in Windows. See |Vital.System.Job-callbacks| for detail.
+
+-----------------------------------------------------------------------------
+CALLBACKS      					|Vital.System.Job-callbacks|
+
+"on_stdout" or "on_stderr" callbacks will be called with "data" argument
+which contains received data as a newline (\n) separated list.
+
+Note that the data may be incomplete. For example, "Hello\nGood\nBye\n" may
+be received as
+
+	1. ["Hello", "Good", "Bye", ""]
+	2. ["Hello", ""], ["Good", ""], and ["Bye", ""]
+	3. ["Hello", "Go"], ["od", "Bye"], and ["", ""]
+
+To normalize the data, see an example code in |Vital.System.Job-usage|.
+
+Additionally, programs running on Windows may use CRLF (\r\n) instead of
+LF (\n) for line delimiter. In this case, developers requires to handle
+trailing CR (\r) characters to normalize the result. Like:
+>
+	function! s:on_stdout(data) abort dict
+	  " Remove trailing CRs
+	  call map(a:data, 'v:val[-1:] ==# "\r" ? v:val[:-2] : v:val')
+	  let self.stdout[-1] .= a:data[0]
+	  call extend(self.stdout, a:data[1:])
+	endfunction
+<
+See https://gist.github.com/lambdalisue/818c389f5602bdc2bee4f93bb9ebef12
+for benchmark test for removing trailing CRs.
+
+"on_exit" callback will be called with "exitval" argument which indicate
+the exit status of the process.
+
+If you need exit status in asynchronous way, use this callback like example
+code in |Vital.System.Job-usage|.
+If you need it in synchronous way, use |Vital.System.Job-instance.wait()| 
+method.
+
+Note that "on_stdout" and/or "on_stderr" callbacks will be called prior to
+the "on_exit" callback if defined. So "on_exit" timing is a bit different
+from "exit_cb" in Vim 8 while this library waits "close_cb" when "on_stdout"
+and/or "on_stderr" are defined.
+
+-----------------------------------------------------------------------------
+PROMISE      					|Vital.System.Job-promise|
+
+The following example code uses |Vital.Async.Promise| to wrap process.
+Not like examples in Async.Promise, the following works on both Vim and
+Neovim.
+>
+	let s:Job = vital#vital#import('System.Job')
+	let s:Promise = vital#vital#import('Async.Promise')
+	
+	function! s:on_receive(buffer, data) abort dict
+	  let a:buffer[-1] .= a:data[0]
+	  call extend(a:buffer, a:data[1:])
+	endfunction
+	
+	function! s:clone(url) abort
+	  let stdout = ['']
+	  let stderr = ['']
+	  return s:Promise.new({
+	        \ rv, rj -> s:Job.start(['git', 'clone', a:url], {
+	        \   'on_stdout': function('s:on_receive', [stdout]),
+	        \   'on_stderr': function('s:on_receive', [stderr]),
+	        \   'on_exit': { e ->
+	        \     e ? rj(join(stderr, "\n")) : rv(join(stdout, "\n"))
+	        \   }
+	        \ })
+	        \})
+	endfunction
+	
+	" Usage
+	call s:clone('https://github.com/lambdalisue/gina.vim')
+	      \.then({ result -> execute('echo ' . string(result), '') })
+	      \.catch({ result -> execute('echo ' . string(result), '') })
+
+
+=============================================================================
+FUNCTION					*Vital.System.Job-function*
+
+					*Vital.System.Job.is_available()*
+is_available()
+	Return 1 if this library is available on current Vim session.
+
+					*Vital.System.Job.start()*
+start({args}[, {options}])
+	Start a new process and return a job instance.
+
+	The {args} may |String| or |List| instance. If |String| is used, the
+	process will be executed through shell. Otherwise the process
+	will be executed directly.
+	See jobstart (Vim) or job_start (Neovim) for more detail about this
+	behavior.
+
+	The following attributes are allowed in {options}.
+
+	"on_stdout"	A callback called when the process output to stdout.
+	"on_stderr"	A callback called when the process output to stderr.
+	"on_exit"	A callback called when the process terminated.
+
+	Note that all attributes in the {options} is exposed to the job
+	instance and users can access that in callbacks by |self| while the
+	callbacks above are called as a dictionary function of the job
+	instance.
+
+	See |Vital.System.Job-callbacks| for detail of each callbacks.
+
+
+=============================================================================
+INSTANCE					*Vital.System.Job-instance*
+
+					*Vital.System.Job-instance.id()*
+id()
+	Return an unique number of the process.
+
+					*Vital.System.Job-instance.status()*
+status()
+	Return a status of the process. The value is one of
+
+	"run"		The process is running.
+	"dead"		The process has terminated or failed to open.
+
+					*Vital.System.Job-instance.send()*
+send({data})
+	Send {data} to the process. The {data} may be a string or a list.
+	When {data} is a list, it is assumed as a newline separated list and
+	all newline character in each item is replaced to "" in Vim and "\0"
+	in Neovim.
+	Note that no extra newline is appended to the {data}, mean that users
+	need to add it by themselves.
+>
+	call job.send('abc' . "\n")
+	" -> send: abc\n
+	call job.send(['abc', '123\n456', ''])
+	" -> send: abc\n123\045\n (Vim: abc\n123456\n)
+<
+					*Vital.System.Job-instance.close()*
+close()
+	Close "stdin" channel/stream of the process. In other word, it sends
+	EOF to the process (e.g. "cat" command in Linux requires EOF.)
+
+	Note that once "stdin" has closed, there is no way to re-open.
+
+					*Vital.System.Job-instance.stop()*
+stop()
+	Stop the process by sending SIGTERM. If the process does not
+	terminate after a timeout then SIGKILL will be sent.
+	Note that the above "timeout" is
+	
+	- 2000 ms in Vim (defined in System.Job.Vim)
+	- 2000 ms in Neovim (defined in src/nvim/event/process.c)
+
+	While "timeout" in Neovim is defined in it's C code, it might be
+	changed in the future so developers should not rely on the value.
+
+					*Vital.System.Job-instance.wait()*
+wait([{timeout}])
+	Wait until the process has terminated or {timeout} has passed.
+	If {timeout} is v:null (default), it waits forever until the process
+	has terminated.
+	It immediately returns an exit status if the process has terminated.
+	Otherwise it waits the process and returns an exit status or
+	-1	The timeout has passed
+	-2	The process is interrupted
+	The unit of {timeout} is milliseconds.
+	When user hit <C-c>, the process will terminate.
+
+	Note that Vim and Neovim return different exitval on different OS
+	when |Vital.System.Job-instance.stop()| has called prior to this
+	method.
+	So developers should avoid checking the return status when they
+	called |Vital.System.Job-instance.stop()|.
+
+
+=============================================================================
+vim:tw=78:fo=tcq2mM:ts=8:ft=help:norl

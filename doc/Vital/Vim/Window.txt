@@ -1,0 +1,66 @@
+*Vital/Vim/Window.txt*	A vital module for window related operation
+
+Author : Alisue <lambdalisue@hashnote.net>
+License: MIT license
+Support: Vim 8.0.0001 and above
+Support: Neovim 0.2.0 and above
+
+
+=============================================================================
+CONTENTS				*Vital.Vim.Window-contents*
+
+FUNCTION 			|Vital.Vim.Window-function|
+
+
+=============================================================================
+FUNCTION 				*Vital.Vim.Window-function*
+
+			*Vital.Vim.Window.focus_window()*
+focus_window({expr} [, {options}])
+	Focus a corresponding window which is specified via {expr}.
+	The {expr} is a window number or an expression used in |winnr()|
+	function.
+	It returns a focus guard instance which is used to restore the
+	previous focus when a corresponding window is found in a range
+	specified via {options.range}. Otherwise it returns |v:null|.
+
+	The {options} may have the following
+
+	"range"		A range to find a window. The followings are allowed
+			"tabpage"	Find a window from a current tabpage
+			"all"		Find a window from all tabpages
+			The default value is "tabpage"
+>
+	edit foo1
+	split foo2
+	" Focus 'foo1' which is shown in a window 2
+	let guard = s:Window.focus_window(2)
+	" Restore the previous focus (focus back to 'foo2')
+	call guard.restore()
+<
+			*Vital.Vim.Window.focus_buffer()*
+focus_buffer({expr} [, {options}])
+	Focus a window which opens a corresponding buffer of {expr}.
+	The {expr} is a buffer number or an expression used in |bufnr()|
+	function.
+	It returns a focus guard instance which is used to restore the
+	previous focus when a corresponding window is found in a range
+	specified via {options.range}. Otherwise it returns |v:null|.
+
+	The {options} may have the following
+
+	"range"		A range to find a buffer The followings are allowed
+			"tabpage"	Find a buffer from a current tabpage
+			"all"		Find a buffer from all tabpages
+			The default value is "tabpage"
+>
+	edit foo1
+	split foo2
+	" Focus 'foo1'
+	let guard = s:Window.focus_buffer('foo1')
+	" Restore the previous focus (focus back to 'foo2')
+	call guard.restore()
+<
+
+=============================================================================
+vim:tw=78:fo=tcq2mM:ts=8:ft=help:norl

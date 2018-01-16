@@ -1,0 +1,34 @@
+Describe Data.List.Chunker
+  Before
+    let Chunker = healthcheck#vital#import('Data.List.Chunker')
+  End
+
+  Describe .new()
+    It returns a {chunker} instance
+      let chunk_size = 10
+      let candidates = range(100)
+      let chunker = Chunker.new(chunk_size, candidates)
+      Assert KeyExists(chunker, 'next')
+    End
+
+    Describe a {chunker} instance
+      Before
+        let chunk_size = 10
+        let candidates = range(55)
+        let chunker = Chunker.new(chunk_size, candidates)
+      End
+
+      Describe .next()
+        It forward {cursor} by {chunk_size} and return a partial {candidates}
+          Assert Equals(chunker.next(), range(0,  10-1))
+          Assert Equals(chunker.next(), range(10, 20-1))
+          Assert Equals(chunker.next(), range(20, 30-1))
+          Assert Equals(chunker.next(), range(30, 40-1))
+          Assert Equals(chunker.next(), range(40, 50-1))
+          Assert Equals(chunker.next(), range(50, 55-1))
+          Assert Equals(chunker.next(), [])
+        End
+      End
+    End
+  End
+End
