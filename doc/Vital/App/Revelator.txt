@@ -1,0 +1,128 @@
+*Vital/App/Revelator.txt*	Framework for an exception revelator pattern
+
+Author : Alisue <lambdalisue@hashnote.net>
+License: MIT license
+Support: Vim 8.0.0000 and above
+Support: Neovim 0.2.0 and above
+
+
+=============================================================================
+CONTENTS				*Vital.App.Revelator-contents*
+
+USAGE				|Vital.App.Revelator-usage|
+FUNCTIONS			|Vital.App.Revelator-functions|
+
+
+=============================================================================
+USAGE					 *Vital.App.Revelator-usage*
+
+Throw exceptions through the helper function and call a target function with
+|Vital.App.Revelator.call()| like:
+>
+	let s:Revelator = vital#vital#import('Revelator')
+
+	function! s:foobar(x) abort
+	  if x == 0
+	    throw s:Revelator.status('foo')
+	  elseif x == 1
+	    throw s:Revelator.warning('foo')
+	  elseif x == 2
+	    throw s:Revelator.error('foo')
+	  elseif x == 3
+	    throw s:Revelator.critical'foo')
+	  endif
+	  echomsg "This line should not be called."
+	endfunction
+
+	call s:Revelator.call(function('s:foobar'), [0])
+	" foo
+
+	call s:Revelator.call(function('s:foobar'), [1])
+	" foo (With WarningMsg highlight)
+
+	call s:Revelator.call(function('s:foobar'), [2])
+	" foo (With ErrorMsg highlight)
+
+	call s:Revelator.call(function('s:foobar'), [3])
+	" foo (With ErrorMsg highlight and throwpoint
+<
+
+=============================================================================
+FUNCTIONS				*Vital.App.Revelator-functions*
+
+					*Vital.App.Revelator.message()*
+message({category}, {msg})
+	Return a {category} revelation message of {msg}.
+	Use this method to create custom revelations.
+
+					*Vital.App.Revelator.status()*
+status({msg})
+	Return a STATUS revelation message of {msg}.
+
+					*Vital.App.Revelator.warning()*
+warning({msg})
+	Return a WARNING revelation message of {msg}.
+
+					*Vital.App.Revelator.error()*
+error({msg})
+	Return an ERROR revelation message of {msg}.
+
+					*Vital.App.Revelator.critical()*
+critical({msg})
+	Return a CRITICAL revelation message of {msg}.
+
+					*Vital.App.Revelator.call()*
+call({func}, {argslist}[, {dict}])
+	Call {func} with {argslist} like a builtin |call()| function but it
+	catch exceptions which follow the revelation message format.
+	Then it use registered receivers to handle the revelation message
+	until one of the receivers returns truthy value.
+
+	Note that receivers registered in {func} will be removed after the
+	function call so that temporary receiver can be registered in the
+	target {func}.
+
+	If {dict} is specified, the {func} is called as a dictionary
+	function with the {dict}.
+
+					*Vital.App.Revelator.register()*
+register({receiver})
+	Register a new revelation {receiver}.
+	The {receiver} function must accept a {revelation} instance and may
+	return 1 to skip rest of the receivers.
+
+	The {revelation} instance has
+
+	"category"	Category string (e.g. STATUS)
+	"message"	Message string
+	"exception"	Exception (|v:exception|)
+	"throwpoint"	Throwpoint (|v:throwpoint|)
+>
+	function! s:my_receiver(revelation) abort
+	  if a:revelation.category ==# 'Error'
+	    call writefile(split(message, '\r\?\n'), 'error.log')
+	    " Comment out the following if you would like to skip rest of
+	    " the receivers
+	    " return 1
+	  endif
+	endfunction
+
+	call s:Revelator.register(function('s:my_receiver'))
+<
+					*Vital.App.Revelator.unregister()*
+unregister({receiver})
+	Unregister an revelation {receiver}.
+
+				*Vital.App.Revelator.get_default_receiver()*
+get_default_receiver()
+	Return a default revelation receive.
+	This default receiver can handle the following revelations.
+
+	"STATUS"	Echo normally
+	"WARNING"	Echo with |WarningMsg|
+	"ERROR"		Echo with |ErrorMsg|
+	"CRITICAL"	Echo with |ErrorMsg| with throwpoint.
+
+
+=============================================================================
+vim:tw=78:fo=tcq2mM:ts=8:ft=help:norl

@@ -1,0 +1,131 @@
+Describe App.Revelator
+  Before all
+    let prefix = 'vital: App.Revelator: '
+  End
+
+  Before
+    let Revelator = healthcheck#vital#import('App.Revelator')
+  End
+
+  Describe .status()
+    It returns an exception message with STATUS category
+      Assert Equal(Revelator.status('foobar'), prefix . 'STATUS: foobar')
+    End
+
+    It replace v:statusmsg to the given message
+      call Revelator.status('foobar')
+      Assert Equal(v:statusmsg, 'foobar')
+    End
+  End
+
+  Describe .warning()
+    It returns an exception message with WARNING category
+      Assert Equal(Revelator.warning('foobar'), prefix . 'WARNING: foobar')
+    End
+
+    It replace v:warningmsg to the given message
+      call Revelator.warning('foobar')
+      Assert Equal(v:warningmsg, 'foobar')
+    End
+  End
+
+  Describe .error()
+    It returns an exception message with ERROR category
+      Assert Equal(Revelator.error('foobar'), prefix . 'ERROR: foobar')
+    End
+
+    It replace v:errmsg to the given message
+      call Revelator.error('foobar')
+      Assert Equal(v:errmsg, 'foobar')
+    End
+  End
+
+  Describe .critical()
+    It returns an exception message with CRITICAL category
+      Assert Equal(Revelator.critical('foobar'), prefix . 'CRITICAL: foobar')
+    End
+
+    It replace v:errmsg to the given message
+      call Revelator.critical('foobar')
+      Assert Equal(v:errmsg, 'foobar')
+    End
+  End
+
+  Describe .call()
+    It calls {func} with {argslist}
+      let calls = []
+      function! s:test_funcref(calls, ...) abort
+        call add(a:calls, a:000)
+      endfunction
+
+      call Revelator.call(
+            \ function('s:test_funcref', [calls]),
+            \ ['foo', 'bar']
+            \)
+      Assert Equals(calls, [
+            \ ['foo', 'bar'],
+            \])
+    End
+
+    It calls {func} with {argslist} as a dictionary function of {dict}
+      let dict = { 'calls': [] }
+      function! dict.test_funcref(...) abort
+        call add(self.calls, [self] + a:000)
+      endfunction
+
+      call Revelator.call(
+            \ dict.test_funcref,
+            \ ['foo', 'bar'],
+            \ dict,
+            \)
+      Assert Equals(dict.calls, [
+            \ [dict, 'foo', 'bar'],
+            \])
+    End
+
+    It echos STATUS message when a status() revelation has thrown
+      let dict = {}
+      let dict.Revelator = Revelator
+      function dict.test_funcref(...) abort
+        throw self.Revelator.status('Revelation:' . string(a:000))
+      endfunction
+
+      let output = execute('call Revelator.call(dict.test_funcref, ["foo", "bar"], dict)')
+      Assert Equal(output, "\nRevelation:['foo', 'bar']")
+    End
+
+    It echos WARNING message when a warning() revelation has thrown
+      let dict = {}
+      let dict.Revelator = Revelator
+      function dict.test_funcref(...) abort
+        throw self.Revelator.warning('Revelation:' . string(a:000))
+      endfunction
+
+      let output = execute('call Revelator.call(dict.test_funcref, ["foo", "bar"], dict)')
+      Assert Equal(output, "\nRevelation:['foo', 'bar']")
+    End
+
+    It echos ERROR message when a error() revelation has thrown
+      let dict = {}
+      let dict.Revelator = Revelator
+      function dict.test_funcref(...) abort
+        throw self.Revelator.error('Revelation:' . string(a:000))
+      endfunction
+
+      let output = execute('call Revelator.call(dict.test_funcref, ["foo", "bar"], dict)')
+      Assert Equal(output, "\nRevelation:['foo', 'bar']")
+    End
+
+    It echos CRITICAL message and throwpoint when a critical() revelation has thrown
+      let dict = {}
+      let dict.Revelator = Revelator
+      function dict.test_funcref(...) abort
+        throw self.Revelator.critical('Revelation:' . string(a:000))
+      endfunction
+
+      let output = execute('call Revelator.call(dict.test_funcref, ["foo", "bar"], dict)')
+      Assert Match(output, "\nRevelation:\\['foo', 'bar']\nfunction <SNR>")
+    End
+  End
+End
+
