@@ -24,9 +24,6 @@ Describe Emitter
     endfunction
   End
 
-  After all
-  End
-
   Before
     let Emitter = healthcheck#vital#import('App.Emitter')
     let guard = Guard.store([Emitter, 0])

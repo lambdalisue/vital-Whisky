@@ -28,7 +28,6 @@ Describe Vim.Console
     let Console = healthcheck#vital#import('Vim.Console')
     let Console.prefix = ''
     message clear
-    set verbose&
   End
 
   Describe .echo({msg}[, {hl}])

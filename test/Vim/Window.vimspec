@@ -1,11 +1,11 @@
 Describe Vim.Window
   After all
-    %bwipeout!
+    silent %bwipeout!
   End
 
   Before
     let Window = healthcheck#vital#import('Vim.Window')
-    %bwipeout!
+    silent %bwipeout!
   End
 
   Describe .focus_window({expr} [, {options}])

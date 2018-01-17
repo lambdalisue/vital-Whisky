@@ -1,11 +1,11 @@
 Describe Vim.Buffer.Opener
   After all
-    %bwipeout!
+    silent %bwipeout!
   End
 
   Before
     let Opener = healthcheck#vital#import('Vim.Buffer.Opener')
-    %bwipeout!
+    silent %bwipeout!
   End
 
   Describe .open()
