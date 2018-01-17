@@ -23,7 +23,7 @@ Throw exceptions through the helper function and call a target function with
 
 	function! s:foobar(x) abort
 	  if x == 0
-	    throw s:Revelator.status('foo')
+	    throw s:Revelator.info('foo')
 	  elseif x == 1
 	    throw s:Revelator.warning('foo')
 	  elseif x == 2
@@ -56,8 +56,8 @@ message({category}, {msg})
 	Use this method to create custom revelations.
 
 					*Vital.App.Revelator.status()*
-status({msg})
-	Return a STATUS revelation message of {msg}.
+info{msg})
+	Return a INFO revelation message of {msg}.
 
 					*Vital.App.Revelator.warning()*
 warning({msg})
@@ -93,14 +93,17 @@ register({receiver})
 
 	The {revelation} instance has
 
-	"category"	Category string (e.g. STATUS)
+	"category"	Category string (e.g. INFO)
 	"message"	Message string
 	"exception"	Exception (|v:exception|)
 	"throwpoint"	Throwpoint (|v:throwpoint|)
 >
 	function! s:my_receiver(revelation) abort
 	  if a:revelation.category ==# 'Error'
-	    call writefile(split(message, '\r\?\n'), 'error.log')
+	    call writefile(
+	          \ split(a:revelation.message, '\r\?\n'),
+	          \ 'error.log',
+	          \)
 	    " Comment out the following if you would like to skip rest of
 	    " the receivers
 	    " return 1
@@ -118,7 +121,7 @@ get_default_receiver()
 	Return a default revelation receive.
 	This default receiver can handle the following revelations.
 
-	"STATUS"	Echo normally
+	"INFO"		Echo normally
 	"WARNING"	Echo with |WarningMsg|
 	"ERROR"		Echo with |ErrorMsg|
 	"CRITICAL"	Echo with |ErrorMsg| with throwpoint.

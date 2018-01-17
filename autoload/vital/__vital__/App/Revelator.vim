@@ -29,9 +29,9 @@ function! s:message(category, msg) abort
         \)
 endfunction
 
-function! s:status(msg) abort
+function! s:info(msg) abort
   let v:statusmsg = a:msg
-  return s:message('STATUS', a:msg)
+  return s:message('INFO', a:msg)
 endfunction
 
 function! s:warning(msg) abort
@@ -100,7 +100,7 @@ function! s:_receive(exception, throwpoint) abort
 endfunction
 
 function! s:_default_receiver(revelation) abort
-  if a:revelation.category ==# 'STATUS'
+  if a:revelation.category ==# 'INFO'
     redraw
     call s:Console.info(a:revelation.message)
     call s:Console.debug(a:revelation.throwpoint)
