@@ -30,18 +30,18 @@ install:
   - pip3 install --user vim-vint
   - pip3 install --user coverage covimerage
   - docker --version
-  - docker build -t lambdalisue/${VIM}-themis/Whiskey:${TAG} --build-arg TAG=${TAG} -f .ci/Dockerfile.${VIM} .
+  - docker build -t lambdalisue/${VIM}-themis/whiskey:${TAG} --build-arg TAG=${TAG} -f .ci/Dockerfile.${VIM} .
 
 before_script:
   - uname -a
   - python3 --version
   - vint --version
   - docker run --rm -it lambdalisue/${VIM}-ci:${TAG} --version
-  - docker run --rm -it lambdalisue/${VIM}-themis/Whiskey:${TAG} --version
+  - docker run --rm -it lambdalisue/${VIM}-themis/whiskey:${TAG} --version
 
 script:
   - vint autoload/
-  - docker run --rm --volume ${PWD}:/mnt/volume -e "PROFILE=${PROFILE}" -it lambdalisue/${VIM}-themis/Whiskey:${TAG}
+  - docker run --rm --volume ${PWD}:/mnt/volume -e "PROFILE=${PROFILE}" -it lambdalisue/${VIM}-themis/whiskey:${TAG}
   - docker run --rm --volume ${PWD}:/mnt/volume -it lambdalisue/${VIM}-ci:${TAG} --cmd "try | helptags doc/ | catch | cquit | endtry" --cmd quit
 
 after_success:
