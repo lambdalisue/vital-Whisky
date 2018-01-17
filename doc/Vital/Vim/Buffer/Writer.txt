@@ -1,0 +1,167 @@
+*Vital/Vim/Buffer/Writer.txt*	A vital module for writing buffer contents
+
+Author : Alisue <lambdalisue@hashnote.net>
+License: MIT license
+Support: Vim 8.0.0000 and above
+Support: Neovim 0.2.0 and above
+
+
+=============================================================================
+CONTENTS				*Vital.Vim.Buffer.Writer-content*
+
+INTRODUCTION			|Vital.Vim.Buffer.Writer-introduction|
+INTERFACE			|Vital.Vim.Buffer.Writer-interface|
+
+
+=============================================================================
+INTRODUCTION				*Vital.Vim.Buffer.Writer-introduction*
+
+*Vital.Vim.Buffer.Writer* is a module to write buffer contents.
+It is mainly used for gradually write mass contents to the buffer without
+interrupting user's actions.
+
+
+=============================================================================
+INTERFACE				*Vital.Vim.Buffer.Writer-interface*
+
+			*Vital.Vim.Buffer.Writer.replace()*
+replace({expr}, {start}, {end}, {replacement})
+	Replace contents between {start} to {end} of a {expr} buffer with
+	a given {replacement} (|List|).
+
+	Indexing of {start} and {end} is zero-based and end-exclusive.
+	Additionally the negative indices are counts from the last, mean that
+	the -1 indicate the last line.
+
+	For example
+>
+	call Writer.replace('%', 0, 0, ['Hello'])
+	" Insert 'Hello' line at the top of the buffer
+
+	call Writer.replace('%', -1, -1, ['World'])
+	" Append 'World' line at the bottom of the buffer
+
+	call Writer.replace('%', -2, -1, ['Darkness'])
+	" Replace the last 'World' line to 'Darkness'
+
+	call Writer.replace('%', 0, -1, [])
+	" Remove entire contents
+<
+	Note that it uses |iconv()| function to convert {replacement} from
+	'encoding' to 'fileencoding' of the {expr} buffer. However, it uses
+	{replacement} as-is when
+	
+	1. 'fileencoding' of the {expr} buffer is empty
+	2. 'encoding' and 'fileencoding' of the {expr} buffer is equal
+	3. |iconv()| completely failed to convert {replacement}
+
+	Note that this method works even the {expr} buffer is
+	specified as 'nomodifiable' buffer. It temporary off that option and
+	restore.
+
+	Note that using this method may temporary change a current buffer
+	in Vim. However it does not affects the followings
+
+	1. Content of non target buffer
+	2. cursor position
+	3. |alternate-file|
+	4. |jumplist||
+
+	But it would affects the followings (the behavior has not defined or
+	tested yet.)
+
+	1. |undolist||
+
+	Note that this method does not work and return 1 when
+
+	1. The {expr} buffer does not exist
+	2. Vim is going to close (|VimLeave| has emitted)
+	3. |v:dying| is not 0 (Vim is forcedly closing)
+
+			*Vital.Vim.Buffer.Writer.new()*
+new([{options}])
+	Create a new writer instance.
+	The following options are available on {options}.
+
+	"bufnr"		A target buffer number.
+			Default is a current buffer number.
+
+	"updatetime"	An interval milliseconds between each flush.
+			Default is |Vital.Vim.Buffer.Writer.updatetime|.
+
+-----------------------------------------------------------------------------
+INSTANCE				*Vital.Vim.Buffer.Writer-instance*
+
+				*Vital.Vim.Buffer.Writer-instance.start()*
+{writer}.start()
+	Start an internal timer of the {writer}.
+	The internaly timer periodically call "flush()" method of the
+	{writer} to update the target buffer contents.
+
+	It kill existing writer instances which have an equal target buffer.
+
+	It calls "on_start()" callback of the {writer} if the callback
+	exists on the instance.
+
+	Note that it does nothing when the {writer} has already started.
+
+				*Vital.Vim.Buffer.Writer-instance.stop()*
+{writer}.stop()
+	Stop an internal timer of the {writer} on next tick so that the
+	last empty line can be removed (See "write()" for the detail.)
+	Use "kill()" method to immediately stop the timer.
+
+				*Vital.Vim.Buffer.Writer-instance.kill()*
+{writer}.kill()
+	Stop an internal timer of the {writer} immediately.
+	
+	It will be called automatically when "stop()" method has called in
+	previous tick.
+
+	It calls "on_exit()" callback of the {writer} if the callback
+	exists on the instance.
+
+				*Vital.Vim.Buffer.Writer-instance.write()*
+{writer}.write({content})
+	Write {content} to an internal buffer of the {writer}.
+
+	The {content} must follow the POSIX text format, mean that the
+	complete {content} always ends with an empty line. For example
+>
+	call writer.start()
+	call writer.write(['Hello', 'World', ''])
+	call writer.write(['Hello', ''])
+	call writer.write(['World', ''])
+	call writer.write(['Hello', 'Wor'])
+	call writer.write(['ld', ''])
+	sleep 1m
+	" > Hello
+	" > World
+	" > Hello
+	" > World
+	" > Hello
+	" > World
+	" >
+<
+	Note that the last empty line will be removed in the final tick when
+	"stop()" method is used and the writer successfully terminate.
+>
+	" ... continues from above example
+	call writer.stop()
+	sleep 1m
+	" > Hello
+	" > World
+	" > Hello
+	" > World
+	" > Hello
+	" > World
+<
+				*Vital.Vim.Buffer.Writer-instance.flush()*
+{writer}.flush()
+	Manually flush an internal buffer to the target buffer.
+	It is automatically called by an internal timer when the {writer}
+	has started so usually user do not need to call it manually.
+
+
+=============================================================================
+vim:tw=78:fo=tcq2mM:ts=8:ft=help:norl
