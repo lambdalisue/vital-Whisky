@@ -1,0 +1,119 @@
+*Vital/Vim/Buffer/Group.txt*	A vital module for grouping buffers
+
+Author : Alisue <lambdalisue@hashnote.net>
+License: MIT license
+Support: Vim 8.0.0000 and above
+Support: Neovim 0.2.0 and above
+
+
+=============================================================================
+CONTENTS				*Vital.Vim.Buffer.Group-content*
+
+INTRODUCTION			|Vital.Vim.Buffer.Group-introduction|
+USAGE				|Vital.Vim.Buffer.Group-usage|
+INTERFACE			|Vital.Vim.Buffer.Group-interface|
+
+
+=============================================================================
+INTRODUCTION				*Vital.Vim.Buffer.Group-introduction*
+
+*Vital.Vim.Buffer.Group* is a library for grouping buffers.
+It is used to close all related buffers at the same time.
+
+
+=============================================================================
+USAGE					*Vital.Vim.Buffer.Group-usage*
+
+Create a group instance and use "add()" method to make associated buffers.
+>
+	let s:Group = vital#{plugin}#import('Vim.Buffer.Group')
+	let group1 = s:Group.new()
+
+	edit Hello
+	split foo1
+	split foo2
+	split foo3
+	call group1.add()				" foo3 is added
+	call group1.add({'expr': 'foo2'})		" foo2 is added
+	call group1.add({'expr': 'foo1', 'keep': 1})	" foo1 is added
+
+        " Behavior
+	" 1. When Hello is closed, foo1-3 stays.
+	" 2. When foo1 is closed, all foo2-3 will be closed.
+	" 3. When foo2 is closed, foo3 will be closed.
+	" 4. When foo3 is closed, foo2 will be closed.
+<
+=============================================================================
+INTERFACE				*Vital.Vim.Buffer.Group-interface*
+
+					*Vital.Vim.Buffer.Group.new()*
+new([{options}])
+	Create a new group instance.
+	The following option is available on {options}.
+
+	"on_close_fail"		A |Funcref| which is called when |E444|
+				exception (Cannot close last window) is
+				raised for closing related buffers.
+
+	The "on_close_fail" callback is called as a dictionary function
+	of the group instance with {winnr} and {member} arguments.
+	The {winnr} is a window number which the target buffer is shown.
+	The {member} is an instance which has the following attributes
+
+	"bufnr"			A buffer number
+	"winid"			A window ID
+	"options"		An {options} used in "add()" method.
+
+	Developers can use "on_close_fail" to quit Vim for example
+>
+	function! s:on_close_fail(winnr, member) abort
+	  quit!
+	endfunction
+
+	let group = s:Group.new({
+	      \ 'on_close_fail': function('s:on_close_fail')
+	      \})
+	" Add buffers ...
+<
+-----------------------------------------------------------------------------
+INSTANCE				*Vital.Vim.Buffer.Group-instance*
+
+				*Vital.Vim.Buffer.Group-instance.add()*
+{group}.add([{options}])
+	Add a current/specified buffer to the {group} instance.
+	The following options are available on {options}.
+
+	"keep"		If 1 is specified, the buffer is not closed when
+			other members has closed.
+	"expr"		An {expr} used in |bufnr()| and |bufwinid()|.
+			If omit, "%" is used to indicate the current buffer
+
+	Use "keep" to protect a main buffer. For example, assume you have
+	three related buffers. The one is a main content and other two are
+	header and sidebar. In this case, you would like to close header and
+	sidebar when the main content has closed BUT you would like to keep
+	open the main content when header/sidebar has closed. Then, do like
+>
+	edit main-content
+	20split header
+	wincmd p
+        50vsplit sidebar
+        wincmd p
+	call group.add({'expr': 'main-content', 'keep': 1})
+	call group.add({'expr': 'header'})
+	call group.add({'expr': 'sidebar'})
+<
+				*Vital.Vim.Buffer.Group-instance.close()*
+{group}.close()
+	Close all associated buffers of the {group}.
+	It is a method which is automatically called when one of an
+	associated buffer of the {group} has closed.
+	It use |close| command internally so it silently fails to close the
+	last window. Use "on_close_fail" callback if you would like to do
+	something in that case.
+
+	Note that a buffer with "keep" is not closed by this method.
+
+
+=============================================================================
+vim:tw=78:fo=tcq2mM:ts=8:ft=help:norl
