@@ -4,10 +4,10 @@ let s:DEFAULT_OPTIONS = {
       \}
 
 function! s:_vital_healthcheck() abort
-  if has('patch-8.0.0001') || has('nvim-0.2.0')
+  if (!has('nvim') && v:version >= 800) || has('nvim-0.2.0')
     return
   endif
-  return 'This module requires Vim 8.0.0001 or Neovim 0.2.0'
+  return 'This module requires Vim 8.0.0000 or Neovim 0.2.0'
 endfunction
 
 function! s:focus_window(expr, ...) abort

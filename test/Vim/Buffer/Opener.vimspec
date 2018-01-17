@@ -19,8 +19,12 @@ Describe Vim.Buffer.Opener
       End
 
       After
-        let &splitbelow = saved_splitbelow
-        let &splitright = saved_splitright
+        if exists('saved_splitbelow')
+          let &splitbelow = saved_splitbelow
+        endif
+        if exists('saved_splitright')
+          let &splitright = saved_splitright
+        endif
       End
 
       It opens a new {buffer} without {opener}
