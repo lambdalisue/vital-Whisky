@@ -1,0 +1,77 @@
+*Vital/App/Emitter.txt*			An emitter library
+
+Author : Alisue <lambdalisue@hashnote.net>
+License: MIT license
+Support: Vim 8.0.0000 and above
+Support: Neovim 0.2.0 and above
+
+
+=============================================================================
+CONTENTS					*Vital.App.Emitter-content*
+
+INTRODUCTION					|Vital.App.Emitter-introduction|
+INTERFACE					|Vital.App.Emitter-interface|
+  FUNCTION					|Vital.App.Emitter-function|
+
+
+=============================================================================
+INTRODUCTION					*Vital.App.Emitter-introduction*
+
+*Vital.App.Emitter* is a |Vital| module used for emit an event.
+
+
+=============================================================================
+INTERFACE					*Vital.App.Emitter-interface*
+
+-----------------------------------------------------------------------------
+FUNCTION					*Vital.App.Emitter-function*
+
+			*Vital.App.Emitter.subscribe()*
+.subscribe({name}, {listener}[, {instance}])
+	Subscribe a {name} event by a {listener}.
+	If {instance} is specified, the {listener} is called as a dictionary
+	function of the {instance}.
+
+			*Vital.App.Emitter.unsubscribe()*
+.unsubscribe([{name}, [{listener}[, {instance}]]])
+	Unsubscribe a {name} event of {listener}.
+	If {listener} is not specified, it unsubscribe all listeners of the
+	{name} event.
+	If {name} is not specified, it unsubscribe all listeners of all
+	events.
+
+			*Vital.App.Emitter.add_middleware()*
+.add_middleware({middleware})
+	Add {middleware} to the middleware list.
+	See |Vital.App.Emitter-middleware| for the detail.
+
+			*Vital.App.Emitter.remove_middleware()*
+.remove_middleware([{middleware}])
+	Remove {middleware} from the middleware list.
+	If no {middleware} has specified, it remove all middlewares.
+	See |Vital.App.Emitter-middleware| for the detail.
+
+			*Vital.App.Emitter.emit()*
+.emit({name} [, {attr}...])
+	Call registered listeners of {name} with {attr}s.
+
+-----------------------------------------------------------------------------
+MIDDLEWARE					*Vital.App.Emitter-middleware*
+
+
+			*Vital.App.Emitter-middleware.on_emit_pre()*
+.on_emit_pre({name}, {listeners}, {attrs})
+	Called before the event has been sent to all listeners.
+	If {listeners} and/or {attrs} are modified in this method, the
+	modified version will be used for further procession.
+	Note that {listeners} and {attrs} are one-time variable for the emit
+	process which call this middleware. So that modification performed on
+	these variable won't affect to other process.
+
+			*Vital.App.Emitter-middleware.on_emit_post()*
+.on_emit_post({name}, {listeners}, {attrs})
+	Called after the event had been sent to all listeners.
+
+
+=============================================================================
+vim:tw=78:fo=tcq2mM:ts=8:ft=help:norl
