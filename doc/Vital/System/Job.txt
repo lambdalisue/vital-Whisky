@@ -159,9 +159,9 @@ is_available()
 start({args}[, {options}])
 	Start a new process and return a job instance.
 
-	The {args} may |String| or |List| instance. If |String| is used, the
-	process will be executed through shell. Otherwise the process
-	will be executed directly.
+	The {args} must be a |List| instance and the process will be executed
+	directly. If you would like to execute process through the shell,
+	see below.
 	See jobstart (Vim) or job_start (Neovim) for more detail about this
 	behavior.
 
@@ -178,6 +178,12 @@ start({args}[, {options}])
 
 	See |Vital.System.Job-callbacks| for detail of each callbacks.
 
+	Note that this library prohibit |String| {args} while Vim and Neovim
+	treat that a bit differently. So to execute process through the
+	shell, use 'shell' and 'shellcmdflag' like
+>
+	call s:Job.start(split(&shell) + split(&shellcmdflag) + ['{cmd}'])
+<
 
 =============================================================================
 INSTANCE					*Vital.System.Job-instance*
