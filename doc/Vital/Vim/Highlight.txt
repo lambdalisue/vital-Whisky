@@ -1,0 +1,72 @@
+*Vital/Vim/Highlight.txt*			Highlight get/set library
+
+Author : Alisue <lambdalisue@hashnote.net>
+License: MIT license
+Support: Vim 8.0.0000 and above
+Support: Neovim 0.2.0 and above
+
+
+==============================================================================
+CONTENTS				*Vital.Vim.Highlight-contents*
+
+INTRODUCTIONS			|Vital.Vim.Highlight-introductions|
+FUNCTIONS			|Vital.Vim.Highlight-functions|
+
+
+==============================================================================
+INTRODUCTIONS				*Vital.Vim.Highlight-introductions*
+
+This module provides several utility functions for |highlight|.
+
+==============================================================================
+FUNCTIONS				*Vital.Vim.Highlight-functions*
+
+					*Vital.Vim.Highlight.get()*
+get([{name}])
+	Return a highlight instance or a list of highlight instances.
+	When {name} is specified, it returns a highlight instance of the
+	given {name}. Otherwise it returns a list of highlight instance of
+	all highlights defined.
+
+	The highlight instance has
+
+	"name"		The name of the highlight
+	"attrs"		Highlight arguments
+
+	For example
+>
+	let highlight = s:Highlight.get('Title')
+	echo highlight.name
+	" 'Title'
+	echo highlight.attrs.ctermfg
+	" '0'
+	echo highlight.attrs.guifg
+	" '#000000'
+<
+					*Vital.Vim.Highlight.set()*
+set({highlight}[, {options}])
+	Create or overwrite highlight by {highlight} instance.
+	The {options} may contains
+
+	"force"		Overwrite existing highlight forcedly
+	"default"	Use "default" keyword to define highlight
+
+	For example
+>
+	call Highlight.set({'name': 'Title', 'attrs': {
+	      \ 'cterm': 'reverse',
+	      \ 'ctermfg': '1',
+	      \ 'guifg': '#123123',
+	      \}})
+
+	call Highlight.set({'name': 'TitleLink', 'attrs': {
+	      \ 'link': 'Title',
+	      \}})
+
+	call Highlight.set({'name': 'TitleClear', 'attrs': {
+	      \ 'cleared': 1,
+	      \}})
+<
+
+==============================================================================
+vim:tw=78:fo=tcq2mM:ts=8:ft=help:norl
