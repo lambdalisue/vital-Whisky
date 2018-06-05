@@ -1,0 +1,157 @@
+*Vital/Async/CancellationToken.txt*	Cancellation observer
+
+Author : Alisue <lambdalisue@hashnote.net>
+License: MIT license
+Support: Vim 8.0.0000 and above
+Support: Neovim 0.2.0 and above
+
+
+=============================================================================
+CONTENTS			*Vital.Async.CancellationToken-content*
+
+INTRODUCTION			|Vital.Async.CancellationToken-introduction|
+USAGE				|Vital.Async.CancellationToken-usage|
+INTERFACE			|Vital.Async.CancellationToken-interface|
+  CONSTANT			|Vital.Async.CancellationToken-constant|
+  FUNCTION			|Vital.Async.CancellationToken-function|
+  INSTANCE			|Vital.Async.CancellationToken-instance|
+
+
+=============================================================================
+INTRODUCTION			*Vital.Async.CancellationToken-introduction*
+
+*Vital.Async.CancellationToken* observe a cancellation signal emitted by
+|Vital.Async.CancellationTokenSource| to achieve cancellation in general.
+
+Users who want to make a cancelable feature can use this module and user
+who want to cancel the feature can use |Vital.Async.CancellationTokenSource|.
+
+This is CancellationToken implementation of a cancellation proposal in TC39.
+
+TC39 Cancellation API~
+https://github.com/tc39/proposal-cancellation
+
+
+=============================================================================
+USAGE				*Vital.Async.CancellationToken-usage*
+
+The code below shows how to use the token to cancel internal processes.
+All registered callbacks will be called when the token receive cancellation
+signals. Note that you need |Vital.Async.CancellationTokenSource| to create
+a valid token. The code below assumed that a valid token will be given by
+the end users. Otherwise it uses a concrete token which will never be
+cancelled (|Vital.Async.CancellationToken.none|).
+>
+	let s:Job = vital#vital#import('System.Job')
+	let s:Promise = vital#vital#import('Async.Promise')
+	let s:CancellationToken =
+	      \ vital#vital#import('Async.CancellationToken')
+	
+	function! s:request(url, ...) abort
+	  let token = a:0 ? a:1 : s:CancellationToken.none
+	  return s:Promise.new(funcref('s:resolver', [a:url, token]))
+	endfunction
+	
+	function! s:resolver(url, token, resolve, reject) abort
+	  " Reject if cancellation has already been requested
+	  call a:token.throw_if_cancellation_requested()
+	
+	  " Create a namespace to access the instance
+	  let ns = { 'job': v:null, 'out': [''] }
+	
+	  " Define cancellation callback
+	  function! s:on_cancel(reason) abort closure
+	    call ns.job.stop()
+	    call a:reject({
+	        \ 'exception': s:CancellationToken.cancel_error(a:reason),
+	        \})
+	  endfunction
+	
+	  " Register cancellation callback
+	  let registration = a:token.register(funcref('s:on_cancel'))
+	
+	  " Define exit callback
+	  function! s:on_exit(exitval) abort closure
+	    " Cancellation is no longer required
+	    call registration.unregister()
+	    call a:resolve([ns.out, a:exitval])
+	  endfunction
+	
+	  " Start Job
+	  let args = ['curl', '-X', 'GET', a:url, '-H', 'accept: application/json']
+	  let ns.job = s:Job.start(args, {
+	        \ 'on_stdout': funcref('s:on_recv', [ns.out]),
+	        \ 'on_exit': funcref('s:on_exit'),
+	        \})
+	endfunction
+	
+	function! s:on_recv(buffer, data) abort
+	  let a:buffer[-1] .= a:data[0]
+	  call extend(a:buffer, a:data[1:])
+	endfunction
+<
+See |Vital.Async.CancellationTokenSource-usage| to cancel a defined function
+above.
+
+
+=============================================================================
+INTERFACE			*Vital.Async.CancellationToken-interface*
+
+-----------------------------------------------------------------------------
+CONSTANT			*Vital.Async.CancellationToken-constant*
+
+			*Vital.Async.CancellationToken.none*
+.none
+	A token which will never be cancelled.
+
+			*Vital.Async.CancellationToken.canceled*
+.canceled
+	A token that is already been canceled.
+
+
+-----------------------------------------------------------------------------
+FUNCTION			*Vital.Async.CancellationToken-function*
+
+			*Vital.Async.CancellationToken.new()*
+.new({source})
+	Create a new token linked to an existing {source}.
+
+	See also:
+	|Vital.Async.CancellationTokenSource.new()|
+
+			*Vital.Async.CancellationToken.cancel_error()*
+.cancel_error({reason})
+	Create a cancel error message with {reason}.
+
+-----------------------------------------------------------------------------
+INSTANCE			*Vital.Async.CancellationToken-instance*
+
+	*Vital.Async.CancellationToken-ins.cancellation_requested()*
+.cancellation_requested()
+	Returns 1 if cancellation has been requested.
+
+	*Vital.Async.CancellationToken-ins.can_be_canceled()*
+.can_be_canceled()
+	Returns 1 if underlying source can be canceled.
+
+	*Vital.Async.CancellationToken-ins.throw_if_cancellation_requested()*
+.throw_if_cancellation_requested()
+	Throws a cancel error message if cancellation has been requested.
+
+	*Vital.Async.CancellationToken-ins.register()*
+.register({callback})
+	Registers a cancellation {callback} which is executed when
+	cancellation is requested.
+	It returns a registration object which has "unregister()" method to
+	unregister the {callback}.
+>
+	" Register a cancellation callback
+	let registration = token.register(funcref('s:on_cancel'))
+
+	" ... Do what ever
+
+	" Unregister the callback
+	call registration.unregister()
+<
+=============================================================================
+vim:tw=78:fo=tcq2mM:ts=8:ft=help:norl

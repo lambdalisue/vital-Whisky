@@ -1,0 +1,80 @@
+Describe Async.CancellationTokenSource
+  Before
+    let CancellationTokenSource = healthcheck#vital#import('Async.CancellationTokenSource')
+  End
+
+  Describe .new([{linked-tokens}])
+    It returns a source instance
+      let source = CancellationTokenSource.new()
+      Assert KeyExists(source, 'cancel')
+      Assert KeyExists(source, 'close')
+    End
+  End
+
+  Context a source instance
+    Before
+      let source1 = CancellationTokenSource.new()
+      let source2 = CancellationTokenSource.new([source1.token])
+      let source3 = CancellationTokenSource.new([source2.token])
+      let source4 = CancellationTokenSource.new()
+      let source5 = CancellationTokenSource.new([source3.token, source4.token])
+    End
+
+    Describe .cancel()
+      It changes the token status to 'cancelled'
+        let token1 = source1.token
+        Assert Equals(token1.cancellation_requested(), 0)
+        call source1.cancel()
+        Assert Equals(token1.cancellation_requested(), 1)
+      End
+
+      It changes all linked tokens' status to 'cancelled'
+        let token1 = source1.token
+        let token2 = source2.token
+        let token3 = source3.token
+        let token4 = source4.token
+        let token5 = source5.token
+        Assert Equals(token1.cancellation_requested(), 0)
+        Assert Equals(token2.cancellation_requested(), 0)
+        Assert Equals(token3.cancellation_requested(), 0)
+        Assert Equals(token4.cancellation_requested(), 0)
+        Assert Equals(token5.cancellation_requested(), 0)
+        call source1.cancel()
+        Assert Equals(token1.cancellation_requested(), 1)
+        Assert Equals(token2.cancellation_requested(), 1)
+        Assert Equals(token3.cancellation_requested(), 1)
+        Assert Equals(token4.cancellation_requested(), 0)
+        Assert Equals(token5.cancellation_requested(), 1)
+      End
+    End
+
+    Describe .close()
+      It changes the token status to 'closed'
+        let token1 = source1.token
+        Assert Equals(token1.can_be_canceled(), 1)
+        call source1.close()
+        Assert Equals(token1.can_be_canceled(), 0)
+      End
+
+      It does not touch linked tokens
+        let token1 = source1.token
+        let token2 = source2.token
+        let token3 = source3.token
+        let token4 = source4.token
+        let token5 = source5.token
+        Assert Equals(token1.can_be_canceled(), 1)
+        Assert Equals(token2.can_be_canceled(), 1)
+        Assert Equals(token3.can_be_canceled(), 1)
+        Assert Equals(token4.can_be_canceled(), 1)
+        Assert Equals(token5.can_be_canceled(), 1)
+        call source1.close()
+        Assert Equals(token1.can_be_canceled(), 0)
+        Assert Equals(token2.can_be_canceled(), 1)
+        Assert Equals(token3.can_be_canceled(), 1)
+        Assert Equals(token4.can_be_canceled(), 1)
+        Assert Equals(token5.can_be_canceled(), 1)
+      End
+    End
+  End
+End
+

@@ -1,0 +1,159 @@
+Describe Async.CancellationToken
+  Before
+    let CancellationToken = healthcheck#vital#import('Async.CancellationToken')
+  End
+
+  Describe .new({source})
+    It returns a token instance linked to the {source}
+      let source = {
+            \ '_state': CancellationToken.STATE_OPEN,
+            \ '_registrations': [],
+            \}
+      let token = CancellationToken.new(source)
+      Assert KeyExists(token, 'cancellation_requested')
+      Assert KeyExists(token, 'can_be_canceled')
+      Assert KeyExists(token, 'throw_if_cancellation_requested')
+      Assert KeyExists(token, 'register')
+    End
+  End
+
+  Describe .cancel_error({reason})
+    It returns a cancel error message with a given {reason}
+      let m = CancellationToken.cancel_error('Timeout')
+      Assert Equals(m, 'vital: Async.CancellationToken: CancelError: Timeout')
+    End
+  End
+
+  Context a token instance
+    Before
+      let source = {
+            \ '_state': CancellationToken.STATE_OPEN,
+            \ '_registrations': [],
+            \}
+      let token = CancellationToken.new(source)
+    End
+
+    Describe .cancellation_requested()
+      It returns 0 when cancellation has not been requested
+        Assert Equals(token.cancellation_requested(), 0)
+      End
+
+      It returns 0 when the linked source is closed
+        let source._state = CancellationToken.STATE_CLOSED
+        Assert Equals(token.cancellation_requested(), 0)
+      End
+
+      It returns 1 when cancellation has already been requested
+        let source._state = CancellationToken.STATE_REQUESTED
+        Assert Equals(token.cancellation_requested(), 1)
+      End
+    End
+
+    Describe .can_be_canceled()
+      It returns 1 when cancellation has not been requested
+        Assert Equals(token.can_be_canceled(), 1)
+      End
+
+      It returns 0 when the linked source is closed
+        let source._state = CancellationToken.STATE_CLOSED
+        Assert Equals(token.can_be_canceled(), 0)
+      End
+
+      It returns 1 when cancellation has already been requested
+        let source._state = CancellationToken.STATE_REQUESTED
+        Assert Equals(token.can_be_canceled(), 1)
+      End
+    End
+
+    Describe .throw_if_cancellation_requested()
+      It does nothing when cancellation has not been requested
+        call token.throw_if_cancellation_requested()
+      End
+
+      It does nothing when the linked source is closed
+        let source._state = CancellationToken.STATE_CLOSED
+        call token.throw_if_cancellation_requested()
+      End
+
+      It throws a cancel error when cancellation has already been requested
+        let source._state = CancellationToken.STATE_REQUESTED
+        Throws /CancelError/ token.throw_if_cancellation_requested()
+      End
+    End
+
+    Describe .register({callback})
+      It registers a {callback} when cancellation has not been requested
+        function! s:callback() abort closure
+          throw 'This line should not be called'
+        endfunction
+
+        let Fn = funcref('s:callback')
+        call token.register(Fn)
+        Assert Equals(len(token._source._registrations), 1)
+      End
+
+      It does nothing when the linked source has closed
+        function! s:callback() abort closure
+          throw 'This line should not be called'
+        endfunction
+
+        let source._state = CancellationToken.STATE_CLOSED
+        let Fn = funcref('s:callback')
+        call token.register(Fn)
+        Assert Equals(len(token._source._registrations), 0)
+      End
+
+      It immediately calls the {callback} when cancellation has already been requested
+        function! s:callback() abort closure
+          throw 'This line should be called'
+        endfunction
+
+        let Fn = funcref('s:callback')
+        let source._state = CancellationToken.STATE_REQUESTED
+        Throw /should be called/ token.register(Fn)
+        Assert Equals(len(token._source._registrations), 0)
+      End
+
+      Context registration instance
+        Describe .unregister()
+          It unregisters registrations when returned from non canceled token
+            function! s:callback() abort closure
+              throw 'This line should not be called'
+            endfunction
+
+            let Fn = funcref('s:callback')
+            let registrations = token.register(Fn)
+            Assert Equals(len(token._source._registrations), 1)
+            call registrations.unregister()
+            Assert Equals(len(token._source._registrations), 0)
+          End
+
+          It does nothing when returned from closed token
+            function! s:callback() abort closure
+              throw 'This line should not be called'
+            endfunction
+
+            let source._state = CancellationToken.STATE_CLOSED
+            let Fn = funcref('s:callback')
+            let registrations = token.register(Fn)
+            Assert Equals(len(token._source._registrations), 0)
+            call registrations.unregister()
+            Assert Equals(len(token._source._registrations), 0)
+          End
+
+          It does nothing when returned from canceled token
+            function! s:callback() abort closure
+            endfunction
+
+            let source._state = CancellationToken.STATE_REQUESTED
+            let Fn = funcref('s:callback')
+            let registrations = token.register(Fn)
+            Assert Equals(len(token._source._registrations), 0)
+            call registrations.unregister()
+            Assert Equals(len(token._source._registrations), 0)
+          End
+        End
+      End
+    End
+  End
+End

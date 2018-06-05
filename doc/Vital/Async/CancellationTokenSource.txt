@@ -1,0 +1,92 @@
+*Vital/Async/CancellationTokenSource.txt*	Cancellation controller
+
+Author : Alisue <lambdalisue@hashnote.net>
+License: MIT license
+Support: Vim 8.0.0000 and above
+Support: Neovim 0.2.0 and above
+
+
+=============================================================================
+CONTENTS		*Vital.Async.CancellationTokenSource-content*
+
+INTRODUCTION		|Vital.Async.CancellationTokenSource-introduction|
+USAGE			|Vital.Async.CancellationTokenSource-usage|
+INTERFACE		|Vital.Async.CancellationTokenSource-interface|
+  FUNCTION		|Vital.Async.CancellationTokenSource-function|
+  INSTANCE		|Vital.Async.CancellationTokenSource-instance|
+
+
+=============================================================================
+INTRODUCTION		*Vital.Async.CancellationTokenSource-introduction*
+
+*Vital.Async.CancellationTokenSource* emit a cancellation signal to notify
+|Vital.Async.CancellationToken| to achieve cancellation in general.
+
+This is CancellationTokenSource implementation of a cancellation proposal in
+TC39.
+
+TC39 Cancellation API~
+https://github.com/tc39/proposal-cancellation
+
+
+=============================================================================
+USAGE			*Vital.Async.CancellationTokenSource-usage*
+
+The code below shows how to use an asynchronous cancelable function shown in
+|Vital.Async.CancellationToken-usage|.
+Note that the source is canceled after 1000 ms so that if HTTP requests takes
+longer than 1000ms, an internal process (curl) will be killed by cancellation.
+>
+	let s:CancellationTokenSource =
+	      \ vital#vital#import('Async.CancellationTokenSource')
+	
+	function! s:test() abort
+	  let source = s:CancellationTokenSource.new()
+	
+	  call s:request('https://httpbin.org/get', source.token)
+	        \.then({ r -> execute('echomsg "OK: " . string(r)', '') })
+	        \.catch({ r -> execute('echomsg "Fail: " . string(r)', '') })
+	
+	  call timer_start(1000, { -> source.cancel('Timeout') })
+	endfunction
+	call s:test()
+<
+See |Vital.Async.CancellationToken-usage| to create asynchronous cancelable
+functions.
+
+
+=============================================================================
+INTERFACE		*Vital.Async.CancellationTokenSource-interface*
+
+-----------------------------------------------------------------------------
+FUNCTION		*Vital.Async.CancellationTokenSource-function*
+
+			*Vital.Async.CancellationTokenSource.new()*
+.new([{linked-tokens}])
+	Create a new source. When {linked-tokens} is given, the source is
+	linked to the given tokens and be canceled when one of a token is
+	canceled.
+
+	See also:
+	|Vital.Async.CancellationToken.new()|
+
+
+-----------------------------------------------------------------------------
+INSTANCE		*Vital.Async.CancellationTokenSource-instance*
+
+	*Vital.Async.CancellationTokenSource-ins.cancel()*
+.cancel([{reason}])
+	Requests cancellation. All cancellation callbacks in all linked
+	tokens will be called.
+	When any exceptions are occurred in cancellation callback, the
+	exception will be raised after this function call.
+
+	*Vital.Async.CancellationTokenSource-ins.close()*
+.close()
+	Close the source. No cancellation can be requests through the closed
+	source. If the source is linked to any existing tokens, the links
+	are unregistered.
+
+
+=============================================================================
+vim:tw=78:fo=tcq2mM:ts=8:ft=help:norl
