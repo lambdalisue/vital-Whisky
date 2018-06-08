@@ -1,0 +1,92 @@
+*Vital/Async/Promise/Util.txt*		Promise management utilities
+
+Author : Alisue <lambdalisue@hashnote.net>
+License: MIT license
+Support: Vim 8.0.0000 and above
+Support: Neovim 0.2.0 and above
+
+
+=============================================================================
+CONTENTS			*Vital.Async.Promise.Util-content*
+
+INTRODUCTION			|Vital.Async.Promise.Util-introduction|
+USAGE				|Vital.Async.Promise.Util-usage|
+INTERFACE			|Vital.Async.Promise.Util-interface|
+  FUNCTION			|Vital.Async.Promise.Util-function|
+
+
+=============================================================================
+INTRODUCTION			*Vital.Async.Promise.Util-introduction*
+
+*Vital.Async.Promise.Util* is a promise management utility module.
+While |Vital.Async.Promise| is a primitive implementation, using it in Vim
+script is limited. This module helps developers to use promise feature in a
+real world scripting.
+
+
+=============================================================================
+USAGE				*Vital.Async.Promise.Util-usage*
+
+>
+	let s:Promise = vital#vital#import('Async.Promise')
+	let s:PromiseUtil = vital#vital#import('Async.Promise.Util')
+
+	let p = s:Promise.new({ -> v:null })
+	echo s:PromiseUtil.state(p)
+	" -> 'pending'
+	echo s:PromiseUtil.result(p)
+	" -> v:null
+
+	let p = s:Promise.resolve('Hello')
+	echo s:PromiseUtil.state(p)
+	" -> 'fulfilled'
+	echo s:PromiseUtil.result(p)
+	" -> 'Hello'
+
+	let p = s:Promise.rejected('Hello')
+	echo s:PromiseUtil.state(p)
+	" -> 'rejected'
+	echo s:PromiseUtil.result(p)
+	" -> 'Hello'
+<
+
+=============================================================================
+INTERFACE			*Vital.Async.Promise.Util-interface*
+
+-----------------------------------------------------------------------------
+FUNCTION			*Vital.Async.Promise.Util-function*
+
+					*Vital.Async.Promise.Util.state()*
+Vital.Async.Promise.Util.state({promise})
+	Returns an internal state of the {promise}.
+	The value will be one of the followings
+
+	"pending"	The promise has not completed yet.
+	"fulfilled"	The promise has succeeded.
+	"rejected"	The promise has failed/rejected.
+
+					*Vital.Async.Promise.Util.result()*
+Vital.Async.Promise.Util.result({promise})
+	Returns an internal result of the {promise}.
+	When the state of the {promise} is "pending", the value is |v:null|.
+	When the state of the {promise} is "fulfilled", the value is a result
+	of the promise.
+	When the state of the {promise} is "rejected", the value is a reason
+	of the rejection.
+
+					*Vital.Async.Promise.Util.wait()*
+Vital.Async.Promise.Util.wait({promise}[, {timeout}])
+	Synchronously wait the {promise} until its completion and return the
+	state of the {promise}.
+	It returns "pending" when the {promise} will not complete within the
+	given {timeout} milliseconds. If no {timeout} is given, it waits the
+	{promise} forever.
+
+					*Vital.Async.Promise.Util.sleep()*
+Vital.Async.Promise.Util.sleep({delay}[, {result}])
+	Return a promise which will be resolved after {delay} milliseconds.
+	If {result} is given, the promise is resolved with the {result}.
+	Otherwise it is resolved with |v:null|.
+
+=============================================================================
+vim:tw=78:fo=tcq2mM:ts=8:ft=help:norl
