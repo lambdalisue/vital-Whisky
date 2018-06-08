@@ -1,0 +1,108 @@
+Describe App.Spinner
+  Before
+    let Spinner = healthcheck#vital#import('App.Spinner')
+  End
+
+  It exposes builtin spinner frames
+    Assert KeyExists(Spinner, 'dots')
+    Assert KeyExists(Spinner, 'dots2')
+    Assert KeyExists(Spinner, 'dots3')
+    Assert KeyExists(Spinner, 'dots4')
+    Assert KeyExists(Spinner, 'dots5')
+    Assert KeyExists(Spinner, 'dots6')
+    Assert KeyExists(Spinner, 'dots7')
+    Assert KeyExists(Spinner, 'dots8')
+    Assert KeyExists(Spinner, 'dots9')
+    Assert KeyExists(Spinner, 'dots10')
+    Assert KeyExists(Spinner, 'dots11')
+    Assert KeyExists(Spinner, 'dots12')
+    Assert KeyExists(Spinner, 'line')
+    Assert KeyExists(Spinner, 'line2')
+    Assert KeyExists(Spinner, 'pipe')
+    Assert KeyExists(Spinner, 'simpleDots')
+    Assert KeyExists(Spinner, 'simpleDotsScrolling')
+    Assert KeyExists(Spinner, 'star')
+    Assert KeyExists(Spinner, 'star2')
+    Assert KeyExists(Spinner, 'flip')
+    Assert KeyExists(Spinner, 'hamburger')
+    Assert KeyExists(Spinner, 'growVertical')
+    Assert KeyExists(Spinner, 'growHorizontal')
+    Assert KeyExists(Spinner, 'balloon')
+    Assert KeyExists(Spinner, 'balloon2')
+    Assert KeyExists(Spinner, 'noise')
+    Assert KeyExists(Spinner, 'bounce')
+    Assert KeyExists(Spinner, 'boxBounce')
+    Assert KeyExists(Spinner, 'boxBounce2')
+    Assert KeyExists(Spinner, 'triangle')
+    Assert KeyExists(Spinner, 'arc')
+    Assert KeyExists(Spinner, 'circle')
+    Assert KeyExists(Spinner, 'squareCorners')
+    Assert KeyExists(Spinner, 'circleQuarters')
+    Assert KeyExists(Spinner, 'circleHalves')
+    Assert KeyExists(Spinner, 'squish')
+    Assert KeyExists(Spinner, 'toggle')
+    Assert KeyExists(Spinner, 'toggle2')
+    Assert KeyExists(Spinner, 'toggle3')
+    Assert KeyExists(Spinner, 'toggle4')
+    Assert KeyExists(Spinner, 'toggle5')
+    Assert KeyExists(Spinner, 'toggle6')
+    Assert KeyExists(Spinner, 'toggle7')
+    Assert KeyExists(Spinner, 'toggle8')
+    Assert KeyExists(Spinner, 'toggle9')
+    Assert KeyExists(Spinner, 'toggle10')
+    Assert KeyExists(Spinner, 'toggle11')
+    Assert KeyExists(Spinner, 'toggle12')
+    Assert KeyExists(Spinner, 'toggle13')
+    Assert KeyExists(Spinner, 'arrow')
+    Assert KeyExists(Spinner, 'arrow2')
+    Assert KeyExists(Spinner, 'arrow3')
+    Assert KeyExists(Spinner, 'bouncingBar')
+    Assert KeyExists(Spinner, 'bouncingBall')
+    Assert KeyExists(Spinner, 'smiley')
+    Assert KeyExists(Spinner, 'monkey')
+    Assert KeyExists(Spinner, 'hearts')
+    Assert KeyExists(Spinner, 'clock')
+    Assert KeyExists(Spinner, 'earth')
+    Assert KeyExists(Spinner, 'moon')
+    Assert KeyExists(Spinner, 'runner')
+    Assert KeyExists(Spinner, 'pong')
+    Assert KeyExists(Spinner, 'shark')
+    Assert KeyExists(Spinner, 'dqpb')
+    Assert KeyExists(Spinner, 'weather')
+    Assert KeyExists(Spinner, 'christmas')
+    Assert KeyExists(Spinner, 'grenade')
+    Assert KeyExists(Spinner, 'point')
+    Assert KeyExists(Spinner, 'layer')
+  End
+
+  Describe .new()
+    It returns a spinner instance
+      let s = Spinner.new(Spinner.dots)
+      Assert KeyExists(s, 'next')
+      Assert KeyExists(s, 'reset')
+    End
+
+    Context a spinner instance
+      Describe .next()
+        It returns a next frame
+          let s = Spinner.new(Spinner.line)
+          Assert Equals(s.next(), '-')
+          Assert Equals(s.next(), '\\')
+          Assert Equals(s.next(), '|')
+          Assert Equals(s.next(), '/')
+          Assert Equals(s.next(), '-')
+        End
+      End
+
+      Describe .reset()
+        It resets the internal index of a spinner
+          let s = Spinner.new(Spinner.line)
+          Assert Equals(s.next(), '-')
+          call s.reset()
+          Assert Equals(s.next(), '-')
+        End
+      End
+    End
+  End
+End
+
