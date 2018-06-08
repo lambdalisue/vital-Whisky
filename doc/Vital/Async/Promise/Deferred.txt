@@ -1,0 +1,71 @@
+*Vital/Async/Promise/Deferred.txt*		Deferred style promise
+
+Author : Alisue <lambdalisue@hashnote.net>
+License: MIT license
+Support: Vim 8.0.0000 and above
+Support: Neovim 0.2.0 and above
+
+
+=============================================================================
+CONTENTS			*Vital.Async.Promise.Deferred-content*
+
+INTRODUCTION			|Vital.Async.Promise.Deferred-introduction|
+USAGE				|Vital.Async.Promise.Deferred-usage|
+INTERFACE			|Vital.Async.Promise.Deferred-interface|
+  FUNCTION			|Vital.Async.Promise.Deferred-function|
+
+
+=============================================================================
+INTRODUCTION			*Vital.Async.Promise.Deferred-introduction*
+
+*Vital.Async.Promise.Deferred* is an deferred style promise implementation.
+The deferred style promise become obsolete in JavaScript but it still has
+some advantage for writing unit tests which relies on promise feature while
+the deferred style promise can resolve/reject from outside of the scope.
+
+https://developer.mozilla.org/en-US/docs/Mozilla/JavaScript_code_modules/Promise.jsm/Deferred
+
+
+=============================================================================
+USAGE				*Vital.Async.Promise.Deferred-usage*
+
+The code belows create a deferred style promise and resolve synchronously.
+It is not possible to write this kind of code with a native promise.
+>
+	let s:Deferred = vital#vital#import('Async.Promise.Deferred')
+	let s:PromiseUtil = vital#vital#import('Async.Promise.Util')
+
+	" Create a deferred promise
+	let p = s:Deferred.new()
+
+	" A deferred promise is a superset of a native promise so users can
+	" use Async.Promise.Util or whatever which requires a promise
+	echo s:PromiseUtil.status(p)
+	" -> 'pending'
+
+	" A status of the deferred promise can be changed outside of the
+	" scope.
+	call p.resolve('Hello')
+
+	echo s:PromiseUtil.status(p)
+	" -> 'fulfilled'
+	echo s:PromiseUtil.result(p)
+	" -> 'Hello'
+<
+
+=============================================================================
+INTERFACE			*Vital.Async.Promise.Deferred-interface*
+
+-----------------------------------------------------------------------------
+FUNCTION			*Vital.Async.Promise.Deferred-function*
+
+			*Vital.Async.Promise.Deferred.new()*
+.new({source})
+	Create a new deferred style promise.
+	The instance extends a native promise with the following methods.
+
+	resolve([{value}])	Resolve the promise
+	reject([{reason}])	Reject the promise
+
+=============================================================================
+vim:tw=78:fo=tcq2mM:ts=8:ft=help:norl

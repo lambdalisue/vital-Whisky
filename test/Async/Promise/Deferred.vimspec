@@ -1,0 +1,42 @@
+Describe Async.Promise.Deferred
+  Before all
+    let PromiseUtil = vital#vital#import('Async.Promise.Util')
+  End
+
+  Before
+    let Deferred = healthcheck#vital#import('Async.Promise.Deferred')
+  End
+
+  Describe .new()
+    It returns a deferred instance
+      let d = Deferred.new()
+      Assert KeyExists(d, 'resolve')
+      Assert KeyExists(d, 'reject')
+      Assert KeyExists(d, 'then')
+      Assert KeyExists(d, 'catch')
+      Assert KeyExists(d, 'finally')
+    End
+
+    Context instance
+      Before
+        let d = Deferred.new()
+      End
+
+      Describe .resolve()
+        It resolves the internal promise
+          Assert Equals(PromiseUtil.state(d), 'pending')
+          call d.resolve()
+          Assert Equals(PromiseUtil.state(d), 'fulfilled')
+        End
+      End
+
+      Describe .reject()
+        It rejects the internal promise
+          Assert Equals(PromiseUtil.state(d), 'pending')
+          call d.reject()
+          Assert Equals(PromiseUtil.state(d), 'rejected')
+        End
+      End
+    End
+  End
+End
