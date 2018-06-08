@@ -19,6 +19,14 @@ environment:
       VIM_ARCH: x64
       PROFILE: .profile
     - VIM: vim
+      VIM_VERSION: 8.1.0001
+      VIM_ARCH: x86
+      PROFILE: .profile
+    - VIM: vim
+      VIM_VERSION: 8.1.0001
+      VIM_ARCH: x64
+      PROFILE: .profile
+    - VIM: vim
       VIM_VERSION: latest
       VIM_ARCH: x86
       PROFILE: .profile
