@@ -42,7 +42,15 @@ endfunction
 
 " Instance -------------------------------------------------------------------
 function! s:_job_id() abort dict
-  return self.__job
+  if &verbose
+    echohl WarningMsg
+    echo 'vital: System.Job: job.id() is deprecated. Use job.pid() instead.'
+  endif
+  return self.pid()
+endfunction
+
+function! s:_job_pid() abort dict
+  return jobpid(self.__job)
 endfunction
 
 function! s:_job_status() abort dict
@@ -104,6 +112,7 @@ endfunction
 " To make debug easier, use funcref instead.
 let s:job = {
       \ 'id': function('s:_job_id'),
+      \ 'pid': function('s:_job_pid'),
       \ 'status': function('s:_job_status'),
       \ 'send': function('s:_job_send'),
       \ 'close': function('s:_job_close'),
