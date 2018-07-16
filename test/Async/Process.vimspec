@@ -1,0 +1,249 @@
+Describe Async.Process
+  Before all
+    let Path = vital#vital#import('System.Filepath')
+    let Promise = vital#vital#import('Async.Promise')
+    let Deferred = vital#vital#import('Async.Promise.Deferred')
+    let Observable = vital#vital#import('Async.Observable')
+    let CancellationToken = vital#vital#import('Async.CancellationToken')
+    let CancellationTokenSource = vital#vital#import('Async.CancellationTokenSource')
+
+    let python = executable('python3') ? 'python3' : 'python'
+    let root = fnamemodify(Path.realpath('test/_testdata/Async/Process'), ':p')
+  End
+
+  Before
+    let Process = healthcheck#vital#import('Async.Process')
+  End
+
+  Describe .read()
+    It returns a Promise instance which resolved with entire channel content
+      let r = Process.start([python, Path.join(root, 'echo.py')])
+      let p1 = Process.read(r.stdout)
+      let [result, error] = Promise.wait(p1)
+      Assert Equals(error, v:null)
+      Assert Equals(result, [
+            \ 'stdout',
+            \ 'HelloWorld',
+            \ 'This is not line',
+            \])
+      let p2 = Process.read(r.stderr)
+      let [result, error] = Promise.wait(p2)
+      Assert Equals(error, v:null)
+      Assert Equals(result, [
+            \ 'stderr',
+            \ 'HelloWorld',
+            \ 'This is not line',
+            \])
+    End
+  End
+
+  Describe .flatten()
+    It returns an Observable instance which flatten the channel content
+      let r = Process.start([python, Path.join(root, 'echo.py')])
+      let o1 = Process.flatten(r.stdout)
+      let d1 = Deferred.new()
+      let data = []
+      call o1.subscribe({
+            \ 'next': { v -> add(data, v) },
+            \ 'error': { e -> d1.reject(e) },
+            \ 'complete': { -> d1.resolve(data) },
+            \})
+      let [result, error] = Promise.wait(d1)
+      Assert Equals(error, v:null)
+      Assert Equals(result, [
+            \ 'stdout',
+            \ 'HelloWorld',
+            \ 'This is not line',
+            \])
+
+      let o2 = Process.flatten(r.stderr)
+      let d2 = Deferred.new()
+      let data = []
+      call o2.subscribe({
+            \ 'next': { v -> add(data, v) },
+            \ 'error': { e -> d2.reject(e) },
+            \ 'complete': { -> d2.resolve(data) },
+            \})
+      let [result, error] = Promise.wait(d2)
+      Assert Equals(error, v:null)
+      Assert Equals(result, [
+            \ 'stderr',
+            \ 'HelloWorld',
+            \ 'This is not line',
+            \])
+    End
+  End
+
+  Describe .start()
+    It starts an external process and return a result instance
+      let r = Process.start([python, Path.join(root, 'echo.py')])
+      Assert KeyExists(r, 'status')
+      Assert KeyExists(r, 'stdout')
+      Assert KeyExists(r, 'stderr')
+      Assert True(Promise.is_promise(r.status))
+      Assert True(Observable.is_observable(r.stdout))
+      Assert True(Observable.is_observable(r.stderr))
+    End
+
+    It cancels the external process when a cancellation token has invoked
+      let s = CancellationTokenSource.new()
+      let r = Process.start([python, Path.join(root, 'stdin.py')], {
+            \ 'token': s.token,
+            \})
+      let [result, error] = Promise.wait(r.status, 100)
+      Assert Equals(error, Promise.TimeoutError)
+      Assert Equals(result, v:null)
+
+      call s.cancel()
+      let [result, error] = Promise.wait(r.status, 100)
+      Assert Equals(error, CancellationToken.CancelledError)
+      Assert Equals(result, v:null)
+    End
+
+    It disables "stdin" fields from a result instance when a falsy value has given to the "stdin" option
+      let r = Process.start([python, Path.join(root, 'stdin.py')], {
+            \ 'stdin': v:false,
+            \})
+      Assert Equals(r.stdin, v:null)
+
+      let [result, error] = Promise.wait(r.status)
+      Assert Equals(error, v:null)
+      Assert Equals(result, 0)
+    End
+
+    It disables "stdout" fields from a result instance when a falsy value has given to the "stdout" option
+      let r = Process.start([python, Path.join(root, 'echo.py')], {
+            \ 'stdout': v:false,
+            \})
+      Assert Equals(r.stdout, v:null)
+
+      let [result, error] = Promise.wait(r.status)
+      Assert Equals(error, v:null)
+      Assert Equals(result, 0)
+    End
+
+    It disables "stderr" fields from a result instance when a falsy value has given to the "stderr" option
+      let r = Process.start([python, Path.join(root, 'echo.py')], {
+            \ 'stderr': v:false,
+            \})
+      Assert Equals(r.stderr, v:null)
+
+      let [result, error] = Promise.wait(r.status)
+      Assert Equals(error, v:null)
+      Assert Equals(result, 0)
+    End
+
+    Describe a process instance
+      Describe .status
+        It is a promise which is resolved when the external process has succeeded
+          let r = Process.start([python, Path.join(root, 'echo.py')])
+          let [result, error] = Promise.wait(r.status)
+          Assert Equals(error, v:null)
+          Assert Equals(result, 0)
+        End
+
+        It is a promise which is resolved when the external process has failed
+          let r = Process.start([python, Path.join(root, 'echo.py'), '--exitcode=100'])
+          let [result, error] = Promise.wait(r.status)
+          Assert Equals(error, v:null)
+          Assert Equals(result, 100)
+        End
+      End
+
+      Describe .stdin
+        It is an observer which send a received data
+          let r = Process.start([python, Path.join(root, 'stdin.py')])
+          let p = Process.read(r.stdout)
+          call r.stdin.next('Hello')
+          call r.stdin.next("Darkness\n")
+          call r.stdin.next(['My'])
+          call r.stdin.next(['Old', 'Friend'])
+          call r.stdin.complete()
+          let [result, error] = Promise.wait(p)
+          Assert Equals(error, v:null)
+          Assert Equals(result, [
+                \ 'stdin: HelloDarkness',
+                \ 'stdin: MyOld',
+                \ 'stdin: Friend',
+                \])
+        End
+      End
+
+      Describe .stdout
+        It is an observable which observe stdout of the external process (after execution)
+          let r = Process.start([python, Path.join(root, 'echo.py')])
+          let p = Process.read(r.stdout)
+          let [result, error] = Promise.wait(p)
+          Assert Equals(error, v:null)
+          Assert Equals(result, [
+                \ 'stdout',
+                \ 'HelloWorld',
+                \ 'This is not line',
+                \])
+        End
+
+        It is an observable which observe stdout of the external process (before execution)
+          let r = Process.start([python, Path.join(root, 'echo.py'), '--delay=1'])
+          let p = Process.read(r.stdout)
+          let [result, error] = Promise.wait(p)
+          Assert Equals(error, v:null)
+          Assert Equals(result, [
+                \ 'stdout',
+                \ 'HelloWorld',
+                \ 'This is not line',
+                \])
+        End
+
+        It is an observable which observe stdout of the external process (middle of execution)
+          let r = Process.start([python, Path.join(root, 'echo.py')])
+          let p = Process.read(r.stdout)
+          let [result, error] = Promise.wait(p)
+          Assert Equals(error, v:null)
+          Assert Equals(result, [
+                \ 'stdout',
+                \ 'HelloWorld',
+                \ 'This is not line',
+                \])
+        End
+      End
+
+      Describe .stderr
+        It is an observable which observe stderr of the external process (after execution)
+          let r = Process.start([python, Path.join(root, 'echo.py')])
+          let p = Process.read(r.stderr)
+          let [result, error] = Promise.wait(p)
+          Assert Equals(error, v:null)
+          Assert Equals(result, [
+                \ 'stderr',
+                \ 'HelloWorld',
+                \ 'This is not line',
+                \])
+        End
+
+        It is an observable which observe stderr of the external process (before execution)
+          let r = Process.start([python, Path.join(root, 'echo.py'), '--delay=1'])
+          let p = Process.read(r.stderr)
+          let [result, error] = Promise.wait(p)
+          Assert Equals(error, v:null)
+          Assert Equals(result, [
+                \ 'stderr',
+                \ 'HelloWorld',
+                \ 'This is not line',
+                \])
+        End
+
+        It is an observable which observe stderr of the external process (middle of execution)
+          let r = Process.start([python, Path.join(root, 'echo.py')])
+          let p = Process.read(r.stderr)
+          let [result, error] = Promise.wait(p)
+          Assert Equals(error, v:null)
+          Assert Equals(result, [
+                \ 'stderr',
+                \ 'HelloWorld',
+                \ 'This is not line',
+                \])
+        End
+      End
+    End
+  End
+End
