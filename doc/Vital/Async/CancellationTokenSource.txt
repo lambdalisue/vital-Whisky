@@ -47,7 +47,7 @@ longer than 1000ms, an internal process (curl) will be killed by cancellation.
 	        \.then({ r -> execute('echomsg "OK: " . string(r)', '') })
 	        \.catch({ r -> execute('echomsg "Fail: " . string(r)', '') })
 	
-	  call timer_start(1000, { -> source.cancel('Timeout') })
+	  call timer_start(1000, { -> source.cancel() })
 	endfunction
 	call s:test()
 <
@@ -75,7 +75,7 @@ FUNCTION		*Vital.Async.CancellationTokenSource-function*
 INSTANCE		*Vital.Async.CancellationTokenSource-instance*
 
 	*Vital.Async.CancellationTokenSource-ins.cancel()*
-.cancel([{reason}])
+.cancel()
 	Requests cancellation. All cancellation callbacks in all linked
 	tokens will be called.
 	When any exceptions are occurred in cancellation callback, the

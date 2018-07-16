@@ -1,6 +1,8 @@
-let s:STATE_OPEN = 'open'
-let s:STATE_CLOSED = 'close'
-let s:STATE_REQUESTED = 'vital: Async.CancellationToken: CancelError: '
+let s:STATE_OPEN = 0
+let s:STATE_CLOSED = 1
+let s:STATE_REQUESTED = 2
+
+let s:CANCELLED_ERROR = 'vital: Async.CancellationToken: CancelledError'
 
 function! s:_vital_created(module) abort
   " State
@@ -19,6 +21,7 @@ function! s:_vital_created(module) abort
         \ '_state': s:STATE_REQUESTED,
         \ '_registrations': [],
         \})
+  let a:module.CancelledError = s:CANCELLED_ERROR
   lockvar 3 a:module
 endfunction
 
@@ -42,30 +45,25 @@ function! s:new(source) abort
   return token
 endfunction
 
-function! s:cancel_error(reason) abort
-  return s:STATE_REQUESTED . a:reason
-endfunction
-
-
 function! s:_cancellation_requested() abort dict
-  return self._source._state =~# '^' . s:STATE_REQUESTED
+  return self._source._state is# s:STATE_REQUESTED
 endfunction
 
 function! s:_can_be_canceled() abort dict
-  return self._source._state !=# s:STATE_CLOSED
+  return self._source._state isnot# s:STATE_CLOSED
 endfunction
 
 function! s:_throw_if_cancellation_requested() abort dict
   if self.cancellation_requested()
-    throw self._source._state
+    throw s:CANCELLED_ERROR
   endif
 endfunction
 
 function! s:_register(callback) abort dict
-  if self._source._state =~# '^' . s:STATE_REQUESTED
+  if self._source._state is# s:STATE_REQUESTED
     call a:callback()
     return { 'unregister': { -> 0 } }
-  elseif self._source._state ==# s:STATE_CLOSED
+  elseif self._source._state is# s:STATE_CLOSED
     return { 'unregister': { -> 0 } }
   endif
 
