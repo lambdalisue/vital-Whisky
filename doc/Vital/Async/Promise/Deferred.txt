@@ -32,25 +32,20 @@ USAGE				*Vital.Async.Promise.Deferred-usage*
 The code belows create a deferred style promise and resolve synchronously.
 It is not possible to write this kind of code with a native promise.
 >
+	let s:Promise = vital#vital#import('Async.Promise')
 	let s:Deferred = vital#vital#import('Async.Promise.Deferred')
-	let s:PromiseUtil = vital#vital#import('Async.Promise.Util')
 
 	" Create a deferred promise
-	let p = s:Deferred.new()
+	let d = s:Deferred.new()
 
-	" A deferred promise is a superset of a native promise so users can
-	" use Async.Promise.Util or whatever which requires a promise
-	echo s:PromiseUtil.status(p)
-	" -> 'pending'
+	" A deferred promise is a superset of a native promise
+	echo s:Promise.is_promise(d)
+	" -> 1
 
 	" A status of the deferred promise can be changed outside of the
 	" scope.
-	call p.resolve('Hello')
+	call d.resolve('Hello')
 
-	echo s:PromiseUtil.status(p)
-	" -> 'fulfilled'
-	echo s:PromiseUtil.result(p)
-	" -> 'Hello'
 <
 
 =============================================================================
