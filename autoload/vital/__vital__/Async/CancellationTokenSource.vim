@@ -41,13 +41,12 @@ function! s:new(...) abort
   return source
 endfunction
 
-function! s:_cancel(...) abort dict
-  if self._state !=# s:CancellationToken.STATE_OPEN
+function! s:_cancel() abort dict
+  if self._state isnot# s:CancellationToken.STATE_OPEN
     return
   endif
 
-  let reason = a:0 ? a:1 : 'Operation has cancelled'
-  let self._state = s:CancellationToken.cancel_error(reason)
+  let self._state = s:CancellationToken.STATE_REQUESTED
   call s:_unlink(self)
 
   let registrations = filter(
@@ -57,7 +56,7 @@ function! s:_cancel(...) abort dict
   let self._registrations = []
   for registration in registrations
     try
-      call registration._target(reason)
+      call registration._target()
     catch
       let exception = v:exception
       call timer_start(0, { -> s:_throw(exception) })
@@ -66,7 +65,7 @@ function! s:_cancel(...) abort dict
 endfunction
 
 function! s:_close() abort dict
-  if self._state !=# s:CancellationToken.STATE_OPEN
+  if self._state isnot# s:CancellationToken.STATE_OPEN
     return
   endif
 
@@ -82,5 +81,5 @@ function! s:_unlink(source) abort
 endfunction
 
 function! s:_throw(exception) abort
-  echoerr a:exception
+  throw a:exception
 endfunction

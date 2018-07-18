@@ -17,13 +17,6 @@ Describe Async.CancellationToken
     End
   End
 
-  Describe .cancel_error({reason})
-    It returns a cancel error message with a given {reason}
-      let m = CancellationToken.cancel_error('Timeout')
-      Assert Equals(m, 'vital: Async.CancellationToken: CancelError: Timeout')
-    End
-  End
-
   Context a token instance
     Before
       let source = {
@@ -77,7 +70,7 @@ Describe Async.CancellationToken
 
       It throws a cancel error when cancellation has already been requested
         let source._state = CancellationToken.STATE_REQUESTED
-        Throws /CancelError/ token.throw_if_cancellation_requested()
+        Throws /CancelledError/ token.throw_if_cancellation_requested()
       End
     End
 
