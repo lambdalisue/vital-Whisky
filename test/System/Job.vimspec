@@ -26,7 +26,7 @@ Describe System.Job
   Before all
     let python = executable('python3') ? 'python3' : 'python'
     let Path = vital#vital#import('System.Filepath')
-    let root = Path.realpath('test/_testdata/System/Job')
+    let root = fnamemodify(Path.realpath('test/_testdata/System/Job'), ':p')
 
     function! Lines(...) abort
       return join(a:000, "\n")
@@ -36,7 +36,7 @@ Describe System.Job
   Before
     let Job = healthcheck#vital#import('System.Job')
     let options = {
-          \ 'on_stderr': function('s:on_stderr')
+          \ 'on_stderr': funcref('s:on_stderr')
           \}
   End
 
@@ -65,6 +65,27 @@ Describe System.Job
     It throws an exception when a first item of {args} is not executable
       Throws /"foo" is not an executable/ Job.start(['foo'])
     End
+
+    It starts a job with a given {cwd}
+      let path = Path.join(root, 'cwd.py')
+      let job = Job.start([python, path], extend(options, {
+            \ '_received': [''],
+            \ 'on_stdout': funcref('s:on_receive'),
+            \}))
+      Assert Equals(job.wait(5000), 0)
+      Assert Equals(job._received, [getcwd(), ''])
+
+      let saved_cwd = getcwd()
+      let cwd = fnamemodify(getcwd(), ':h:p')
+      let job = Job.start([python, path], extend(options, {
+            \ '_received': [''],
+            \ 'on_stdout': funcref('s:on_receive'),
+            \ 'cwd': cwd,
+            \}))
+      Assert Equals(job.wait(5000), 0)
+      Assert Equals(job._received, [cwd, ''])
+      Assert Equals(getcwd(), saved_cwd)
+    End
   End
 
   Describe callbacks
@@ -72,7 +93,7 @@ Describe System.Job
       Before
         let options = extend(options, {
               \ '_received': [''],
-              \ 'on_stdout': function('s:on_receive'),
+              \ 'on_stdout': funcref('s:on_receive'),
               \})
       End
 
@@ -136,7 +157,7 @@ Describe System.Job
       Before
         let options = extend(options, {
               \ '_received': [''],
-              \ 'on_stderr': function('s:on_receive'),
+              \ 'on_stderr': funcref('s:on_receive'),
               \})
       End
 
@@ -204,7 +225,7 @@ Describe System.Job
 
         let options = extend(options, {
               \ '_exitcode': [],
-              \ 'on_exit': function('s:on_exit'),
+              \ 'on_exit': funcref('s:on_exit'),
               \})
       End
 
@@ -227,14 +248,14 @@ Describe System.Job
   End
 
   Describe An instance
-    Describe .id()
+    Describe .pid()
       It returns a unique number for individual process
         let path = Path.join(root, 'infinity_loop.py')
         let job1 = Job.start([python, path], options)
         let job2 = Job.start([python, path], options)
-        Assert IsNumber(job1.id())
-        Assert IsNumber(job2.id())
-        Assert NotEqual(job1.id(), job2.id())
+        Assert IsNumber(job1.pid())
+        Assert IsNumber(job2.pid())
+        Assert NotEqual(job1.pid(), job2.pid())
         call job1.stop()
         call job2.stop()
         call job1.wait(5000)
@@ -264,7 +285,7 @@ Describe System.Job
       Before
         let options = extend(options, {
               \ '_received': [''],
-              \ 'on_stdout': function('s:on_receive_text'),
+              \ 'on_stdout': funcref('s:on_receive_text'),
               \})
       End
 
@@ -307,7 +328,7 @@ Describe System.Job
       Before
         let options = extend(options, {
               \ '_received': [''],
-              \ 'on_stdout': function('s:on_receive_text'),
+              \ 'on_stdout': funcref('s:on_receive_text'),
               \})
       End
 
