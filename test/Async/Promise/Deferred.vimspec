@@ -1,7 +1,10 @@
 Describe Async.Promise.Deferred
   Before all
     let Promise = vital#vital#import('Async.Promise')
-    let PromiseUtil = vital#vital#import('Async.Promise.Util')
+    " States of promise
+    let PENDING = 0
+    let FULFILLED = 1
+    let REJECTED = 2
   End
 
   Before
@@ -23,17 +26,17 @@ Describe Async.Promise.Deferred
 
       Describe .resolve()
         It resolves the internal promise
-          Assert Equals(PromiseUtil.state(d), 'pending')
+          Assert Equals(d._state, PENDING)
           call d.resolve()
-          Assert Equals(PromiseUtil.state(d), 'fulfilled')
+          Assert Equals(d._state, FULFILLED)
         End
       End
 
       Describe .reject()
         It rejects the internal promise
-          Assert Equals(PromiseUtil.state(d), 'pending')
+          Assert Equals(d._state, PENDING)
           call d.reject()
-          Assert Equals(PromiseUtil.state(d), 'rejected')
+          Assert Equals(d._state, REJECTED)
         End
       End
     End
