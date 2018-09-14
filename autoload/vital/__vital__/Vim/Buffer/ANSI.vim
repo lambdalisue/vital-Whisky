@@ -59,7 +59,7 @@ function! s:define_syntax(...) abort
         \)
   for [code, name] in items(s:COLORS)
     execute printf(
-          \ 'syn region %s%s contains=%s keepend start=/\e\[%sm/ end=/\e\[0m/',
+          \ 'syn region %s%s contains=%s keepend start=/\e\[%sm/ end=/\e\[[0-9A-Z;]*m/',
           \ prefix, name, 'AnsiSuppress', code
           \)
     execute printf(
