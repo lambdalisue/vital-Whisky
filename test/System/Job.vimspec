@@ -343,9 +343,11 @@ Describe System.Job
         call job.send("Old\n")
         call job.send("Friend\n")
         " EOF has not been sent so the following should be timeout
+        sleep 10m
         Assert Equals(job.wait(1000), -1)
         Assert Equals(job._received, [''])
         call job.close()
+        sleep 10m
         Assert Equals(job.wait(1000), 0)
         Assert Equals(job._received, [
               \ 'IN: Hello',
