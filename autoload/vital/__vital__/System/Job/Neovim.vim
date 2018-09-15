@@ -59,6 +59,7 @@ endfunction
 
 function! s:_job_status() abort dict
   try
+    sleep 1m
     call jobpid(self.__job)
     return 'run'
   catch /^Vim\%((\a\+)\)\=:E900/
