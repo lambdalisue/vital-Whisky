@@ -98,10 +98,8 @@ function! s:_job_wait(...) abort dict
         \ ? jobwait([self.__job])[0]
         \ : jobwait([self.__job], timeout)[0]
   if exitval != -3
-    sleep 1m
     return exitval
   endif
-  " The job has already been terminated.
   " Wait until 'on_exit' callback is called
   while self.__exitval is# v:null
     sleep 1m
