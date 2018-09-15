@@ -6,6 +6,9 @@ endfunction
 function! s:start(args, options) abort
   let job = extend(copy(s:job), a:options)
   let job_options = {}
+  if has_key(a:options, 'cwd')
+    let job_options.cwd = a:options.cwd
+  endif
   if has_key(job, 'on_stdout')
     let job_options.on_stdout = function('s:_on_stdout', [job])
   endif
