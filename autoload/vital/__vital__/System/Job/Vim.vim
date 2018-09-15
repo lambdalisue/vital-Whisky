@@ -27,7 +27,7 @@ function! s:start(args, options) abort
   if has_key(job, 'on_exit')
     let job_options.exit_cb = function('s:_exit_cb', [job])
   endif
-  if has_key(job, 'cwd')
+  if has_key(job, 'cwd') && has('patch-8.0.0902')
     let job_options.cwd = job.cwd
   endif
   let job.__job = job_start(a:args, job_options)
