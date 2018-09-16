@@ -66,26 +66,28 @@ Describe System.Job
       Throws /"foo" is not an executable/ Job.start(['foo'])
     End
 
-    It starts a job with a given {cwd}
-      let path = Path.join(root, 'cwd.py')
-      let job = Job.start([python, path], extend(options, {
-            \ '_received': [''],
-            \ 'on_stdout': funcref('s:on_receive'),
-            \}))
-      Assert Equals(job.wait(5000), 0)
-      Assert Equals(job._received, [getcwd(), ''])
+    if has('patch-8.0.0902') || has('nvim')
+      It starts a job with a given {cwd}
+        let path = Path.join(root, 'cwd.py')
+        let job = Job.start([python, path], extend(options, {
+              \ '_received': [''],
+              \ 'on_stdout': funcref('s:on_receive_text'),
+              \}))
+        Assert Equals(job.wait(5000), 0)
+        Assert Equals(job._received, [getcwd(), ''])
 
-      let saved_cwd = getcwd()
-      let cwd = fnamemodify(getcwd(), ':h:p')
-      let job = Job.start([python, path], extend(options, {
-            \ '_received': [''],
-            \ 'on_stdout': funcref('s:on_receive'),
-            \ 'cwd': cwd,
-            \}))
-      Assert Equals(job.wait(5000), 0)
-      Assert Equals(job._received, [cwd, ''])
-      Assert Equals(getcwd(), saved_cwd)
-    End
+        let saved_cwd = getcwd()
+        let cwd = fnamemodify(getcwd(), ':h:p')
+        let job = Job.start([python, path], extend(options, {
+              \ '_received': [''],
+              \ 'on_stdout': funcref('s:on_receive_text'),
+              \ 'cwd': cwd,
+              \}))
+        Assert Equals(job.wait(5000), 0)
+        Assert Equals(job._received, [cwd, ''])
+        Assert Equals(getcwd(), saved_cwd)
+      End
+    endif
   End
 
   Describe callbacks
@@ -341,9 +343,11 @@ Describe System.Job
         call job.send("Old\n")
         call job.send("Friend\n")
         " EOF has not been sent so the following should be timeout
+        sleep 10m
         Assert Equals(job.wait(1000), -1)
         Assert Equals(job._received, [''])
         call job.close()
+        sleep 10m
         Assert Equals(job.wait(1000), 0)
         Assert Equals(job._received, [
               \ 'IN: Hello',

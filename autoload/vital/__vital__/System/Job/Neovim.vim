@@ -6,6 +6,9 @@ endfunction
 function! s:start(args, options) abort
   let job = extend(copy(s:job), a:options)
   let job_options = {}
+  if has_key(a:options, 'cwd')
+    let job_options.cwd = a:options.cwd
+  endif
   if has_key(job, 'on_stdout')
     let job_options.on_stdout = function('s:_on_stdout', [job])
   endif
@@ -45,6 +48,7 @@ function! s:_job_id() abort dict
   if &verbose
     echohl WarningMsg
     echo 'vital: System.Job: job.id() is deprecated. Use job.pid() instead.'
+    echohl None
   endif
   return self.pid()
 endfunction
@@ -55,6 +59,7 @@ endfunction
 
 function! s:_job_status() abort dict
   try
+    sleep 1m
     call jobpid(self.__job)
     return 'run'
   catch /^Vim\%((\a\+)\)\=:E900/
@@ -98,10 +103,8 @@ function! s:_job_wait(...) abort dict
         \ ? jobwait([self.__job])[0]
         \ : jobwait([self.__job], timeout)[0]
   if exitval != -3
-    sleep 1m
     return exitval
   endif
-  " The job has already been terminated.
   " Wait until 'on_exit' callback is called
   while self.__exitval is# v:null
     sleep 1m

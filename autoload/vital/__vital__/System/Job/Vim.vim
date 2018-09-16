@@ -21,17 +21,13 @@ function! s:start(args, options) abort
   else
     let job_options.err_io = 'null'
   endif
-  if has_key(job, 'on_stdout') || has_key(job, 'on_stderr')
-    let job_options.close_cb = function('s:_close_cb', [job])
-  endif
   if has_key(job, 'on_exit')
     let job_options.exit_cb = function('s:_exit_cb', [job])
   endif
-  if has_key(job, 'cwd')
+  if has_key(job, 'cwd') && has('patch-8.0.0902')
     let job_options.cwd = job.cwd
   endif
   let job.__job = job_start(a:args, job_options)
-  let job.__closed = v:false
   let job.args = a:args
   return job
 endfunction
@@ -44,29 +40,24 @@ function! s:_err_cb(job, channel, msg) abort
   call a:job.on_stderr(split(a:msg, "\n", 1))
 endfunction
 
-function! s:_close_cb(job, channel) abort
-  let a:job.__closed = v:true
+function! s:_exit_cb(job, channel, exitval) abort
+  " Make sure on_stdout/on_stderr are called prior to on_exit.
   if has_key(a:job, 'on_stdout')
     let options = {'part': 'out'}
+    while ch_status(a:channel, options) ==# 'open'
+      sleep 1m
+    endwhile
     while ch_status(a:channel, options) ==# 'buffered'
       call s:_out_cb(a:job, a:channel, ch_readraw(a:channel, options))
     endwhile
   endif
   if has_key(a:job, 'on_stderr')
     let options = {'part': 'err'}
+    while ch_status(a:channel, options) ==# 'open'
+      sleep 1m
+    endwhile
     while ch_status(a:channel, options) ==# 'buffered'
       call s:_err_cb(a:job, a:channel, ch_readraw(a:channel, options))
-    endwhile
-  endif
-endfunction
-
-function! s:_exit_cb(job, channel, exitval) abort
-  " Make sure on_stdout/on_stderr are called prior to on_exit.
-  " This check requires 'close_cb' so perform only when on_stdout/on_stderr
-  " is defined in a job instance.
-  if has_key(a:job, 'on_stdout') || has_key(a:job, 'on_stderr')
-    while !a:job.__closed
-      sleep 1m
     endwhile
   endif
   call a:job.on_exit(a:exitval)
@@ -78,6 +69,7 @@ function! s:_job_id() abort dict
   if &verbose
     echohl WarningMsg
     echo 'vital: System.Job: job.id() is deprecated. Use job.pid() instead.'
+    echohl None
   endif
   return self.pid()
 endfunction
