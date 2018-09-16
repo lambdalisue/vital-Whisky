@@ -48,6 +48,7 @@ function! s:_job_id() abort dict
   if &verbose
     echohl WarningMsg
     echo 'vital: System.Job: job.id() is deprecated. Use job.pid() instead.'
+    echohl None
   endif
   return self.pid()
 endfunction
