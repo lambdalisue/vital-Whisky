@@ -40,6 +40,11 @@ Describe System.Job
           \}
   End
 
+  After
+    " Relax
+    sleep 100m
+  End
+
   Describe .start({cmd}[, {options}])
     It starts a job with {cmd} (List) and return a job instance
       let path = Path.join(root, '2sec.py')
