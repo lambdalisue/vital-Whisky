@@ -1,0 +1,323 @@
+Describe Rx.Subject
+  Before all
+    let TIMEOUT = (!empty($APPVEYOR) || !empty($TRAVIS)) ? 5000 : 500
+
+    let BufferObserver = vital#vital#import('Rx.Test.BufferObserver')
+  End
+
+  Before
+    let Observable = healthcheck#vital#import('Rx.Observable')
+    let Operators = healthcheck#vital#import('Rx.Operators')
+    let Subject = healthcheck#vital#import('Rx.Subject')
+  End
+
+  Describe .new()
+    It returns a Subject instance
+      let j = Subject.new()
+      Assert True(Observable.is_observable(j))
+      Assert KeyExists(j, 'next')
+      Assert KeyExists(j, 'error')
+      Assert KeyExists(j, 'complete')
+      Assert KeyExists(j, 'subscribe')
+      Assert KeyExists(j, 'observers')
+      Assert IsFunc(j.next)
+      Assert IsFunc(j.error)
+      Assert IsFunc(j.complete)
+      Assert IsFunc(j.subscribe)
+      Assert IsList(j.observers)
+    End
+  End
+
+  Describe Subject instance
+    It should pump values right on through itself
+      let b = BufferObserver.new()
+      let j = Subject.new()
+      call j.subscribe(b)
+      call j.next('foo')
+      call j.next('bar')
+      call j.complete()
+      Assert Equals(b.results, ['n:foo', 'n:bar', 'c'])
+    End
+
+    It should pump values to multiple observers
+      let b1 = BufferObserver.new()
+      let b2 = BufferObserver.new()
+      let j = Subject.new()
+      call j.subscribe(b1)
+      call j.subscribe(b2)
+      Assert Equals(len(j.observers), 2)
+      call j.next('foo')
+      call j.next('bar')
+      call j.complete()
+      Assert Equals(b1.results, ['n:foo', 'n:bar', 'c'])
+      Assert Equals(b2.results, ['n:foo', 'n:bar', 'c'])
+    End
+
+    It should handle observers that arrive and leave at different times, subject does not complete
+      let b1 = BufferObserver.new()
+      let b2 = BufferObserver.new()
+      let b3 = BufferObserver.new()
+      let j = Subject.new()
+      call j.next(1)
+      call j.next(2)
+      call j.next(3)
+      call j.next(4)
+      let s1 = j.subscribe(b1)
+      call j.next(5)
+      let s2 = j.subscribe(b2)
+      call j.next(6)
+      call j.next(7)
+      call s1.unsubscribe()
+      call j.next(8)
+      call s2.unsubscribe()
+      call j.next(9)
+      call j.next(10)
+      let s3 = j.subscribe(b3)
+      call j.next(11)
+      call s3.unsubscribe()
+      Assert Equals(b1.results, [
+            \ 'n:5',
+            \ 'n:6',
+            \ 'n:7',
+            \])
+      Assert Equals(b2.results, [
+            \ 'n:6',
+            \ 'n:7',
+            \ 'n:8',
+            \])
+      Assert Equals(b3.results, [
+            \ 'n:11',
+            \])
+    End
+
+    It should handle observers that arrive and leave at different times, subject completes
+      let b1 = BufferObserver.new()
+      let b2 = BufferObserver.new()
+      let b3 = BufferObserver.new()
+      let j = Subject.new()
+      call j.next(1)
+      call j.next(2)
+      call j.next(3)
+      call j.next(4)
+      let s1 = j.subscribe(b1)
+      call j.next(5)
+      let s2 = j.subscribe(b2)
+      call j.next(6)
+      call j.next(7)
+      call s1.unsubscribe()
+      call j.complete()
+      call s2.unsubscribe()
+      let s3 = j.subscribe(b3)
+      call s3.unsubscribe()
+      Assert Equals(b1.results, [
+            \ 'n:5',
+            \ 'n:6',
+            \ 'n:7',
+            \])
+      Assert Equals(b2.results, [
+            \ 'n:6',
+            \ 'n:7',
+            \ 'c',
+            \])
+      Assert Equals(b3.results, [
+            \ 'c',
+            \])
+    End
+
+    It should handle observers that arrive and leave at different times, subject terminates with an error
+      let b1 = BufferObserver.new()
+      let b2 = BufferObserver.new()
+      let b3 = BufferObserver.new()
+      let j = Subject.new()
+      call j.next(1)
+      call j.next(2)
+      call j.next(3)
+      call j.next(4)
+      let s1 = j.subscribe(b1)
+      call j.next(5)
+      let s2 = j.subscribe(b2)
+      call j.next(6)
+      call j.next(7)
+      call s1.unsubscribe()
+      call j.error('err')
+      call s2.unsubscribe()
+      let s3 = j.subscribe(b3)
+      call s3.unsubscribe()
+      Assert Equals(b1.results, [
+            \ 'n:5',
+            \ 'n:6',
+            \ 'n:7',
+            \])
+      Assert Equals(b2.results, [
+            \ 'n:6',
+            \ 'n:7',
+            \ 'e:err',
+            \])
+      Assert Equals(b3.results, [
+            \ 'e:err',
+            \])
+    End
+
+    It should handle observers that arrive and leave at different times, subject completes before nexting any value
+      let b1 = BufferObserver.new()
+      let b2 = BufferObserver.new()
+      let b3 = BufferObserver.new()
+      let j = Subject.new()
+      let s1 = j.subscribe(b1)
+      let s2 = j.subscribe(b2)
+      call s1.unsubscribe()
+      call j.complete()
+      call s2.unsubscribe()
+      let s3 = j.subscribe(b3)
+      call s3.unsubscribe()
+      Assert Equals(b1.results, [
+            \])
+      Assert Equals(b2.results, [
+            \ 'c',
+            \])
+      Assert Equals(b3.results, [
+            \ 'c',
+            \])
+    End
+
+    It should disallow new observer once subject has been disposed
+      let b1 = BufferObserver.new()
+      let b2 = BufferObserver.new()
+      let b3 = BufferObserver.new()
+      let j = Subject.new()
+      let s1 = j.subscribe(b1)
+      call j.next(1)
+      call j.next(2)
+      let s2 = j.subscribe(b2)
+      call j.next(3)
+      call j.next(4)
+      call j.next(5)
+      call s1.unsubscribe()
+      call s2.unsubscribe()
+      call j.unsubscribe()
+
+      Throw /Subject is already closed/ j.subscribe(b3)
+
+      Assert Equals(b1.results, [
+            \ 'n:1',
+            \ 'n:2',
+            \ 'n:3',
+            \ 'n:4',
+            \ 'n:5',
+            \])
+      Assert Equals(b2.results, [
+            \ 'n:3',
+            \ 'n:4',
+            \ 'n:5',
+            \])
+      Assert Equals(b3.results, [
+            \])
+    End
+
+    It should not allow values to be nexted after it is unsubscribed
+      let b = BufferObserver.new()
+      let j = Subject.new()
+      call j.subscribe(b)
+      call j.next('foo')
+      call j.unsubscribe()
+      Throw /Subject is already closed/ j.next('bar')
+      Assert Equals(b.results, [
+            \ 'n:foo',
+            \])
+    End
+
+    It should clean out unsubscribed observers
+      let j = Subject.new()
+      let s1 = j.subscribe({ -> 0 })
+      let s2 = j.subscribe({ -> 0 })
+      Assert Equals(len(j.observers), 2)
+      call s1.unsubscribe()
+      Assert Equals(len(j.observers), 1)
+      call s2.unsubscribe()
+      Assert Equals(len(j.observers), 0)
+    End
+
+    It should have a static create function that works
+      let b1 = BufferObserver.new()
+      let b2 = BufferObserver.new()
+      let o = Observable.of(1, 2, 3, 4, 5)
+      let j = Subject.create(b1, o)
+      let s = j.subscribe(b2)
+
+      call j.next('a')
+      call j.next('b')
+      call j.next('c')
+      call j.complete()
+      Assert Equals(Observable.wait(s, TIMEOUT), 0)
+
+      Assert Equals(b1.results, ['n:a', 'n:b', 'n:c', 'c'])
+      Assert Equals(b2.results, ['n:1', 'n:2', 'n:3', 'n:4', 'n:5', 'c'])
+    End
+
+    It should have a static create function that works also to raise errors
+      let b1 = BufferObserver.new()
+      let b2 = BufferObserver.new()
+      let o = Observable.of(1, 2, 3, 4, 5)
+      let j = Subject.create(b1, o)
+      let s = j.subscribe(b2)
+
+      call j.next('a')
+      call j.next('b')
+      call j.next('c')
+      call j.error('boom')
+      Assert Equals(Observable.wait(s, TIMEOUT), 0)
+
+      Assert Equals(b1.results, ['n:a', 'n:b', 'n:c', 'e:boom'])
+      Assert Equals(b2.results, ['n:1', 'n:2', 'n:3', 'n:4', 'n:5', 'c'])
+    End
+
+    It should be an Observer which can be given to Observable.subscribe
+      let b = BufferObserver.new()
+      let o = Observable.of(1, 2, 3, 4, 5)
+      let j = Subject.new()
+
+      call j.subscribe(b)
+      Assert Equals(Observable.wait(o.subscribe(j), TIMEOUT), 0)
+      Assert Equals(b.results, ['n:1', 'n:2', 'n:3', 'n:4', 'n:5', 'c'])
+    End
+
+    It should be usable as an Observer of a finite delayed Observable
+      let b = BufferObserver.new()
+      let o = Observable.of(1, 2, 3, 4, 5).pipe(Operators.delay(50))
+      let j = Subject.new()
+
+      call j.subscribe(b)
+      Assert Equals(Observable.wait(o.subscribe(j), TIMEOUT), 0)
+      Assert Equals(b.results, ['n:1', 'n:2', 'n:3', 'n:4', 'n:5', 'c'])
+    End
+
+    It should throw an error when emit after unsubscribed
+      let j = Subject.new()
+      call j.unsubscribe()
+
+      Throw /Subject is already closed/ j.next('a')
+      Throw /Subject is already closed/ j.error('a')
+      Throw /Subject is already closed/ j.complete()
+    End
+
+    It should not next after completed
+      let j = Subject.new()
+      let b = BufferObserver.new()
+      call j.subscribe(b)
+      call j.next('a')
+      call j.complete()
+      call j.next('b')
+      Assert Equals(b.results, ['n:a', 'c'])
+    End
+
+    It should not next after error
+      let j = Subject.new()
+      let b = BufferObserver.new()
+      call j.subscribe(b)
+      call j.next('a')
+      call j.error('hello')
+      call j.next('b')
+      Assert Equals(b.results, ['n:a', 'e:hello'])
+    End
+  End
+End
