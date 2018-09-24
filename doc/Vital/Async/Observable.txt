@@ -1,0 +1,338 @@
+*Vital/Async/Observable.txt*   an observable data model for event streams
+
+Author : Alisue <lambdalisue@hashnote.net>
+License: MIT license
+Support: Vim 8.0.0000 and above
+Support: Neovim 0.2.0 and above
+
+
+=============================================================================
+CONTENTS			*Vital.Async.Observable-content*
+
+INTRODUCTION			|Vital.Async.Observable-introduction|
+EXAMPLE				|Vital.Async.Observable-example|
+CONSTANTS			|Vital.Async.Observable-constants|
+FUNCTIONS			|Vital.Async.Observable-functions|
+INSTANCES			|Vital.Async.Observable-instances|
+  Observable			|Vital.Async.Observable-Observable|
+  Exception			|Vital.Async.Observable-Exception|
+
+
+=============================================================================
+INTRODUCTION			*Vital.Async.Observable-introduction*
+
+*Vital.Async.Observable* is a library to model push-based data sources such
+as an event stream. The constructor (|Vital.Async.Observable.new()|) takes a
+callback which defines an event stream and users can subscribe the events
+by calling "subscribe()" method.
+
+This library provides only a core part of the Observable model. If you need
+higher API for ReactiveX style programming, see |Vital.Rx.Observable|.
+
+The specifications and core implementations were ported from an observable
+proposal in TC39 (Stage 1).
+
+TC39 Proposal:
+https://github.com/tc39/proposal-observable
+
+
+=============================================================================
+EXAMPLE				*Vital.Async.Observable-example*
+
+(1) Sync subscriber	*Vital.Async.Observable-example-sync-subscriber*
+
+In subscriber function, users can use an observer instance to emits events
+such as "next", "error", and "complete".
+The function is called synchronously after the observable is subscribed.
+>
+	let Observable = vital#{plugin}#import('Async.Observable')
+	
+	function! s:subscriber(observer) abort
+	  call a:observer.next(1)
+	  call a:observer.next(2)
+	  call a:observer.next(3)
+	  call a:observer.complete()
+	endfunction
+
+	let rs = []
+	let o = Observable.new(funcref('s:subscriber'))
+	let s = o.subscribe({ v -> add(rs, v) })
+
+	call assert_true(s.closed(), 'subscription is closed')
+	call assert_equal(rs, [1, 2, 3])
+<
+
+	
+(2) Async subscriber	*Vital.Async.Observable-example-async-subscriber*
+
+To make an asynchronous observer, users can use |Vital.Async.Later| module
+to emits events asynchronously.
+
+Note that |timer_start()| works similar but Vim uses FILO stack to register
+the callbacks and Neovim uses FIFO queue so the order of execution will be
+reversed in Neovim. The |Vital.Async.Later| module is used to solve this
+problem so it is better to use that module in this case.
+>
+	let Observable = vital#{plugin}#import('Async.Observable')
+	let Later = vital#{plugin}#import('Async.Later')
+	
+	function! s:subscriber(observer) abort
+	  call Later.call({ -> a:observer.next(1) })
+	  call Later.call({ -> a:observer.next(2) })
+	  call Later.call({ -> a:observer.next(3) })
+	  call Later.call({ -> a:observer.complete() })
+	endfunction
+
+	let rs = []
+	let o = Observable.new(funcref('s:subscriber'))
+	let s = o.subscribe({ v -> add(rs, v) })
+
+	call assert_false(s.closed(), 'subscription is NOT closed')
+	call assert_equal(rs, [])
+
+	" Relax
+	sleep 100m
+
+	call assert_true(s.closed(), 'subscription is closed')
+	call assert_equal(rs, [1, 2, 3])
+<
+
+=============================================================================
+FUNCTIONS			*Vital.Async.Observable-functions*
+
+new({subscriber})			*Vital.Async.Observable.new()*
+
+	Create a new observable instance using a given {subscriber} function.
+
+	The {subscriber} function is called whenever the "subscribe" method
+	of the observable is invoked. The function is called with a
+	subscription observer instance which has the following method
+
+	"closed"	A function which return TRUE when the target
+			subscription has closed.
+	"next"		A function to notify a "next" event with a value
+			to the subscribing observers.
+	"error"		A function to notify a "error" event with a value
+			to the subscribing observers.
+	"complete"	A function to notify a "complete" event to the
+			subscribing observers.
+	
+	The {subscriber} may returns a cleanup function or subscription which
+	is used when a subscription has unsubscribed.
+>
+	function! s:subscriber(observer) abort
+	  if a:observer.closed()
+	    " The target subscription has already closed so skip
+	    return
+	  endif
+	  " Emits next(1), next(2), next(3), complete() asynchronously
+	  let timers = [
+	        \ timer_start(10, { -> a:observer.next(1) }),
+	        \ timer_start(50, { -> a:observer.next(2) }),
+	        \ timer_start(100, { -> a:observer.next(3) }),
+	        \ timer_start(150, { -> a:observer.complete() }),
+	        \]
+	  " Return a clean-up function
+	  return { -> map(timers, { -> timer_stop(v:val) }) }
+	endfunction
+
+	let o = Observable.new(funcref('s:subscriber'))
+	call o.subscribe({ v -> execute('echo v') })
+	" 1
+	" 2
+	" 3
+<
+of([{item}, ...])			*Vital.Async.Observable.of()*
+
+	Create a new observable instance with given items.
+>
+	call Observable.of(1, 2, 3)
+	      \.subscribe({ v -> execute('echo v', '') })
+	" 1
+	" 2
+	" 3
+<
+from({value})				*Vital.Async.Observable.from()*
+
+	Create a new observable from a given {value}.
+
+	When {value} is an observable, it returns a new observable instance
+	which subscribe a given observable.
+
+	When {value} is a promise, it returns a new observable instance
+	which emits a next event with a promise's resolved value and a
+	complete event or an error event with a promise's rejected error.
+
+	When {value} is an array, it returns a new observable instance 
+	which emits each items.
+>
+	" From an observable
+	let s = Observable.of(1, 2, 3)
+	let o = Observable.from(s)
+	call assert_notequal(id(s), id(o))
+	call o.subscribe({ v -> execute('echo v', '') })
+	" 1
+	" 2
+	" 3
+
+	" From a promise
+	let s = Promise.resolve(1)
+	let o = Observable.from(s)
+	call o.subscribe({ v -> execute('echo v', '') })
+	" 1
+	let s = Promise.reject(1)
+	let o = Observable.from(s)
+	call o.subscribe({ -> 0 }, { v -> execute('echo v', '') })
+	" 1
+
+	" From an array
+	let s = [1, 2, 3]
+	let o = Observable.from(s)
+	call o.subscribe({ v -> execute('echo v', '') })
+	" 1
+	" 2
+	" 3
+<
+wait({subscription}[, {options}])	*Vital.Async.Observable.wait()*
+
+	Block execution synchronously until a given {subscription} has
+	become closed and return FALSE, or until {timeout} has passed and
+	returns TRUE.
+	When {subscription} is a list of subscriptions, it waits until all
+	subscriptions has become closed.
+	
+	The following {options} are available
+
+	"timeout"	Timeout in milliseconds. When timeout, the function
+			returns TRUE.
+			When it is |v:null|, the function waits a given
+			{subscription} for ever.
+			Default: v:null
+	"interval"	Interval delay of an internal loop in milliseconds.
+			Default: 30
+
+	For convenience, users can directly specify the "timeout" in the
+	second argument like
+>
+	call Observable.wait(s, 1000)
+	" Is equivalent to call Observable.wait(s, {'timeout': 1000})
+<
+
+is_observable({value})		*Vital.Async.Observable.is_observable()*
+
+	Return TRUE when {value} is an Observable object. Otherwise, returns
+	FALSE.
+
+
+=============================================================================
+INSTANCES				*Vital.Async.Observable-instances*
+
+-----------------------------------------------------------------------------
+Observable object			*Vital.Async.Observable-Observable*
+
+
+			*Vital.Async.Observable-Observable.subscribe()*
+{observable}.subscribe({observer})
+{observable}.subscribe({next}[, {error}[, {complete}]])
+
+	Subscribe the observable with a given {observer} and returns a new
+	{subscription} instance which can be used to unsubscribe.
+
+	The {observer} instance may has the following methods
+
+	"next"		A callback which is called with a value when a
+			"next" event has invoked from the observable.
+	"error"		A callback which is called with a value when a
+			"error" event has invoked from the observable.
+	"complete"	A callback which is called when a "complete" event
+			has invoked from the observable.
+
+	When the first argument is a function, it constructs an {observer}
+	from given callbacks.
+
+			*Vital.Async.Observable-Observable.foreach()*
+{observable}.foreach({next})
+
+	Subscribe the observable and invoke a given {next} function with
+	each value in the stream and a {done} callback function.
+	It returns an |Vital.Async.Promise| instance which will be resolved
+	when the observable emits complete or be rejected when the observable
+	emits error.
+
+	When {done} callback is called in {next} function, the promise will
+	be resolved.
+	When {next} callback throws an exception, the promise will be
+	rejected with an error object.
+>
+	call Observable.of(1, 2, 3)
+	      \.foreach({ v -> execute('echo printf("f:%s", v)', '') })
+	      \.then({ v -> execute('echo printf("t:%s", v)', '') })
+	      \.catch({ e -> execute('echo printf("c:%s", e)', '') })
+	" f:1
+	" f:2
+	" f:3
+	" t:v:null
+
+	call Observable.new({ o -> [o.next(1), o.next(2), o.error(3)] })
+	      \.foreach({ v -> execute('echo printf("f:%s", v)', '') })
+	      \.then({ v -> execute('echo printf("t:%s", v)', '') })
+	      \.catch({ e -> execute('echo printf("c:%s", e)', '') })
+	" f:1
+	" f:2
+	" t:3
+<
+			*Vital.Async.Observable-Observable.pipe()*
+{observable}.pipe([{operators}...])
+
+	Pipe given {operators} with a previous observable and an Observable
+	constructor (|Vital.Async.Observable.new()|).
+
+	It returns an observable which the final {operators} return.
+>
+	" A subscriber function for Twice operator
+	function! s:subscriber(s, o) abort
+	  return a:s.subscribe(
+	        \ { v -> a:o.next(v * 2) },
+	        \ { e -> a:o.error(e) },
+	        \ { -> a:o.complete() },
+	        \})
+	endfunction
+
+	" Twice is an operator which multiply 2 to each value in the stream
+	let Twice = { s, ctor -> ctor(funcref('s:subscriber', [s])) }
+
+	call Observable.of(1, 2, 3)
+	      \.pipe(Twice, Twice, Twice)
+	      \.subscribe({ v -> execute('echo v', '') })
+	" 8
+	" 16
+	" 24
+<
+
+-----------------------------------------------------------------------------
+Exception instance	*Vital.Async.Observable-Exception*
+
+Exception object represents an exception of Vim script. Since Vim script's
+|v:exception| is a |String| value and a stack trace of the exception is
+separated to |v:throwpoint| variable, it does not fit Observable API.
+So we need to define our own exception object. It is passed to {error}
+parameter of .error() method.
+
+Example:
+>
+  call Observable.new({-> execute('throw "ERROR!"')})
+        \subscribe({ -> 0 }, { e -> execute('echo e', '') })
+  " Output:
+  " {'exception': 'ERROR!', 'throwpoint': '...'}
+<
+Exception object has two fields; "exception" and "throwpoint".
+"exception" is an error message. It's corresponding to |v:exception|. And
+"throwpoint" is a stack trace of the caught exception. It's corresponding to
+|v:throwpoint|.
+
+See also:
+|Vital.Async.Promise-objects-Exception|
+
+
+=============================================================================
+vim:tw=78:fo=tcq2mM:ts=8:ft=help:norl

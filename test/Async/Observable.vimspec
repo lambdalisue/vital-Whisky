@@ -1,0 +1,606 @@
+Describe Async.Observable
+  Before all
+    let Later = vital#vital#import('Async.Later')
+    let Promise = vital#vital#import('Async.Promise')
+
+    function! BufferObserver() abort
+      let observer = { 'results': [] }
+      return extend(observer, {
+            \ 'next': { v -> add(observer.results, printf('n:%s', v)) },
+            \ 'error': { e -> add(observer.results, printf('e:%s', e)) },
+            \ 'complete': { -> add(observer.results, 'c') },
+            \})
+    endfunction
+  End
+
+  Before
+    let Observable = healthcheck#vital#import('Async.Observable')
+  End
+
+  Describe .new()
+    It returns an observable instance
+      let o = Observable.new({ -> 0 })
+      Assert KeyExists(o, '@@observable')
+      Assert KeyExists(o, 'subscribe')
+      Assert IsFunc(o['@@observable'])
+      Assert IsFunc(o.subscribe)
+      Assert True(Observable.is_observable(o))
+    End
+
+    It returns an observable from a given logic (never)
+      function! s:subscriber(observer) abort
+        call a:observer.next(1)
+        call a:observer.next(2)
+        call a:observer.next(3)
+      endfunction
+
+      let o = Observable.new(funcref('s:subscriber'))
+      let b = BufferObserver()
+      Assert True(Observable.is_observable(o))
+      Assert True(Observable.wait(o.subscribe(b), 50))
+      Assert Equals(b.results, ['n:1', 'n:2', 'n:3'])
+    End
+
+    It returns an observable from a given logic (complete)
+      function! s:subscriber(observer) abort
+        call a:observer.next(1)
+        call a:observer.next(2)
+        call a:observer.complete()
+      endfunction
+
+      let o = Observable.new(funcref('s:subscriber'))
+      let b = BufferObserver()
+      Assert True(Observable.is_observable(o))
+      Assert False(Observable.wait(o.subscribe(b), 50))
+      Assert Equals(b.results, ['n:1', 'n:2', 'c'])
+    End
+
+    It returns an observable from a given logic (error)
+      function! s:subscriber(observer) abort
+        call a:observer.next(1)
+        call a:observer.next(2)
+        call a:observer.error(3)
+      endfunction
+
+      let o = Observable.new(funcref('s:subscriber'))
+      let b = BufferObserver()
+      Assert True(Observable.is_observable(o))
+      Assert False(Observable.wait(o.subscribe(b), 50))
+      Assert Equals(b.results, ['n:1', 'n:2', 'e:3'])
+    End
+  End
+
+  Describe .of()
+    It returns an observable from given items
+      let o = Observable.of(1, 2, 3)
+      let b = BufferObserver()
+      Assert True(Observable.is_observable(o))
+      Assert False(Observable.wait(o.subscribe(b), 5000))
+      Assert Equals(b.results, ['n:1', 'n:2', 'n:3', 'c'])
+    End
+  End
+
+  Describe .from()
+    It returns an observable from a given observable (never)
+      function! s:subscriber(observer) abort
+        call a:observer.next(1)
+        call a:observer.next(2)
+        call a:observer.next(3)
+      endfunction
+
+      let s = Observable.new(funcref('s:subscriber'))
+      let o = Observable.from(s)
+      let b = BufferObserver()
+      Assert NotSame(o, s)
+      Assert True(Observable.is_observable(o))
+      Assert True(Observable.wait(o.subscribe(b), 50))
+      Assert Equals(b.results, ['n:1', 'n:2', 'n:3'])
+    End
+
+    It returns an observable from a given observable (complete)
+      function! s:subscriber(observer) abort
+        call a:observer.next(1)
+        call a:observer.next(2)
+        call a:observer.complete()
+      endfunction
+
+      let s = Observable.new(funcref('s:subscriber'))
+      let o = Observable.from(s)
+      let b = BufferObserver()
+      Assert NotSame(o, s)
+      Assert True(Observable.is_observable(o))
+      Assert False(Observable.wait(o.subscribe(b), 50))
+      Assert Equals(b.results, ['n:1', 'n:2', 'c'])
+    End
+
+    It returns an observable from a given observable (error)
+      function! s:subscriber(observer) abort
+        call a:observer.next(1)
+        call a:observer.next(2)
+        call a:observer.error(3)
+      endfunction
+
+      let s = Observable.new(funcref('s:subscriber'))
+      let o = Observable.from(s)
+      let b = BufferObserver()
+      Assert NotSame(o, s)
+      Assert True(Observable.is_observable(o))
+      Assert False(Observable.wait(o.subscribe(b), 50))
+      Assert Equals(b.results, ['n:1', 'n:2', 'e:3'])
+    End
+
+    It returns an observable from a given promise (resolve)
+      let o = Observable.from(Promise.new({ resolve -> resolve('resolve') }))
+      let b = BufferObserver()
+      Assert True(Observable.is_observable(o))
+      Assert False(Observable.wait(o.subscribe(b), 50))
+      Assert Equals(b.results, ['n:resolve', 'c'])
+    End
+
+    It returns an observable from a promise (reject)
+      let o = Observable.from(Promise.new({ _, reject -> reject('reject') }))
+      let b = BufferObserver()
+      Assert True(Observable.is_observable(o))
+      Assert False(Observable.wait(o.subscribe(b), 50))
+      Assert Equals(b.results, ['e:reject'])
+    End
+
+    It returns an observable from an array
+      let o = Observable.from([1, 2, 3])
+      let b = BufferObserver()
+      Assert True(Observable.is_observable(o))
+      Assert False(Observable.wait(o.subscribe(b), 5000))
+      Assert Equals(b.results, ['n:1', 'n:2', 'n:3', 'c'])
+    End
+  End
+
+  Describe .wait()
+    It waits until a subscription has unsubscribed and return FALSE
+      let s = Observable.new({ -> 0 }).subscribe()
+      call Later.call({ -> s.unsubscribe() })
+      Assert False(s.closed())
+      Assert False(Observable.wait(s, 50))
+      Assert True(s.closed())
+    End
+
+    It waits until subscriptions has unsubscribed and return FALSE
+      let s1 = Observable.new({ -> 0 }).subscribe()
+      let s2 = Observable.new({ -> 0 }).subscribe()
+      call Later.call({ -> s1.unsubscribe() })
+      call Later.call({ -> s2.unsubscribe() })
+      Assert False(s1.closed())
+      Assert False(s2.closed())
+      Assert False(Observable.wait([s1, s2], 50))
+      Assert True(s1.closed())
+      Assert True(s2.closed())
+    End
+
+    It waits until a given timeout and return TRUE
+      function! s:subscriber(observer) abort closure
+        " Never complete
+      endfunction
+
+      let s = Observable.new({ -> 0 }).subscribe()
+      Assert False(s.closed())
+      let t = reltime()
+      Assert True(Observable.wait(s, 100))
+      let d = reltimefloat(reltime(t)) * 1000
+      Assert False(s.closed())
+      Assert Compare(d, '>=', 100)
+      Assert Compare(d, '<', 1000)
+    End
+
+    It waits at least the interval milliseconds and return FALSE (interval > delay)
+      function! s:subscriber(observer) abort
+        call timer_start(200, { -> a:observer.complete() })
+      endfunction
+
+      let o = Observable.new(funcref('s:subscriber'))
+      let s = reltime()
+      Assert False(Observable.wait(o.subscribe(), {
+            \ 'timeout': 5000,
+            \ 'interval': 1000,
+            \}))
+      let d = reltimefloat(reltime(s)) * 1000
+      Assert Compare(d, '>=', 1000)
+      Assert Compare(d, '<', 2000)
+    End
+
+    It waits at least the interval milliseconds and return FALSE (interval < delay)
+      function! s:subscriber(observer) abort
+        call timer_start(1000, { -> a:observer.complete() })
+      endfunction
+
+      let o = Observable.new(funcref('s:subscriber'))
+      let s = reltime()
+      Assert False(Observable.wait(o.subscribe(), {
+            \ 'timeout': 5000,
+            \ 'interval': 200,
+            \}))
+      let d = reltimefloat(reltime(s)) * 1000
+      Assert Compare(d, '>=', 1000)
+      Assert Compare(d, '<', 1400)
+    End
+  End
+
+  Describe .is_observable()
+    It returns FALSE if {maybe_observable} is not Dict
+      Assert False(Observable.is_observable(0))
+      Assert False(Observable.is_observable(''))
+      Assert False(Observable.is_observable([]))
+      Assert False(Observable.is_observable(function('tr')))
+    End
+
+    It returns FALSE if {maybe_observable} does not have a symbol
+      Assert False(Observable.is_observable({}))
+    End
+
+    It returns FALSE if {maybe_observable} has an invalid symbol
+      let observable = {}
+      let observable['@@observable'] = 1
+      Assert False(Observable.is_observable(observable))
+    End
+
+    It returns TRUE if {maybe_observable} has a valid symbol
+      let observable = {}
+      let observable['@@observable'] = { -> observable }
+      Assert True(Observable.is_observable(observable))
+    End
+  End
+
+  Describe Observable instance
+    Describe .@@observable()
+      It returns itself
+        let o = Observable.new({ -> 0 })
+        Assert Same(o, o[Observable.SYMBOL]())
+      End
+    End
+
+    Describe .subscribe()
+      It executes the subscriber and returns a subscription
+        let ns = []
+
+        function! s:subscriber(observer) abort closure
+          call add(ns, 'called')
+        endfunction
+
+        let s = Observable.new(funcref('s:subscriber')).subscribe()
+        Assert KeyExists(s, 'closed')
+        Assert KeyExists(s, 'unsubscribe')
+        Assert IsFunc(s.closed)
+        Assert IsFunc(s.unsubscribe)
+        Assert Equals(ns, ['called'])
+      End
+
+      It executes the subscriber and return a subscription which calls cleanup function reterend in its unsubscribe method
+        let ns = []
+
+        function! s:subscriber(observer) abort closure
+          call add(ns, 'called')
+          return { -> add(ns, 'cleaned') }
+        endfunction
+
+        let s = Observable.new(funcref('s:subscriber')).subscribe()
+        call s.unsubscribe()
+        Assert Equals(ns, ['called', 'cleaned'])
+      End
+
+      It executes the subscriber and return a subscription which calls unsubscribe method of an object reterend in its unsubscribe method
+        let ns = []
+
+        function! s:subscriber(observer) abort closure
+          call add(ns, 'called')
+          return { 'unsubscribe': { -> add(ns, 'cleaned') } }
+        endfunction
+
+        let s = Observable.new(funcref('s:subscriber')).subscribe()
+        call s.unsubscribe()
+        Assert Equals(ns, ['called', 'cleaned'])
+      End
+
+      It executes the subscriber and emits 'next' events to a given observer
+        function! s:subscriber(observer) abort
+          call a:observer.next(1)
+          call a:observer.next(2)
+          call a:observer.next(3)
+        endfunction
+
+        let b = BufferObserver()
+        call Observable.new(funcref('s:subscriber')).subscribe(b)
+        Assert Equals(b.results, ['n:1', 'n:2', 'n:3'])
+      End
+
+      It executes the subscriber and emits 'error' events to a given observer
+        function! s:subscriber(observer) abort
+          call a:observer.next(1)
+          call a:observer.next(2)
+          call a:observer.error(3)
+        endfunction
+
+        let b = BufferObserver()
+        call Observable.new(funcref('s:subscriber')).subscribe(b)
+        Assert Equals(b.results, ['n:1', 'n:2', 'e:3'])
+      End
+
+      It executes the subscriber and emits 'complete' events to a given observer
+        function! s:subscriber(observer) abort
+          call a:observer.next(1)
+          call a:observer.next(2)
+          call a:observer.complete()
+        endfunction
+
+        let b = BufferObserver()
+        call Observable.new(funcref('s:subscriber')).subscribe(b)
+        Assert Equals(b.results, ['n:1', 'n:2', 'c'])
+      End
+
+      It executes the subscriber and emits events to a given observer independently
+        function! s:subscriber(observer) abort
+          call a:observer.next(1)
+          call a:observer.next(2)
+          call a:observer.complete()
+        endfunction
+
+        let b1 = BufferObserver()
+        let b2 = BufferObserver()
+        call Observable.new(funcref('s:subscriber')).subscribe(b1)
+        call Observable.new(funcref('s:subscriber')).subscribe(b2)
+        Assert Equals(b1.results, ['n:1', 'n:2', 'c'])
+        Assert Equals(b2.results, ['n:1', 'n:2', 'c'])
+      End
+
+      It executes the subscriber and emits events to a given observer asynchronously
+        function! s:subscriber(observer) abort closure
+          call Later.call({ -> a:observer.next(1) })
+          call Later.call({ -> a:observer.next(2) })
+          call Later.call({ -> a:observer.next(3) })
+        endfunction
+
+        let b = BufferObserver()
+        let s = Observable.new(funcref('s:subscriber')).subscribe(b)
+        sleep 10m
+        Assert Equals(b.results, ['n:1', 'n:2', 'n:3'])
+      End
+
+      It executes the subscriber and emits events to a given observer asynchronously (unsubscribe)
+        function! s:subscriber(observer) abort closure
+          call Later.call({ -> a:observer.next(1) })
+          call Later.call({ -> a:observer.next(2) })
+          call Later.call({ -> a:observer.next(3) })
+        endfunction
+
+        let b = BufferObserver()
+        let s = Observable.new(funcref('s:subscriber')).subscribe(b)
+        call Later.call({ -> s.unsubscribe() })
+        Assert False(Observable.wait(s, 50))
+        Assert Equals(b.results, ['n:1', 'n:2', 'n:3'])
+      End
+
+      It executes the subscriber and emits events to a given observer asynchronously (complete)
+        function! s:subscriber(observer) abort closure
+          call Later.call({ -> a:observer.next(1) })
+          call Later.call({ -> a:observer.next(2) })
+          call Later.call({ -> a:observer.complete() })
+        endfunction
+
+        let b = BufferObserver()
+        let s = Observable.new(funcref('s:subscriber')).subscribe(b)
+        Assert False(Observable.wait(s, 50))
+        Assert Equals(b.results, ['n:1', 'n:2', 'c'])
+      End
+
+      It executes the subscriber and emits events to a given observer asynchronously (error)
+        function! s:subscriber(observer) abort closure
+          call Later.call({ -> a:observer.next(1) })
+          call Later.call({ -> a:observer.next(2) })
+          call Later.call({ -> a:observer.error(3) })
+        endfunction
+
+        let b = BufferObserver()
+        let s = Observable.new(funcref('s:subscriber')).subscribe(b)
+        Assert False(Observable.wait(s, 50))
+        Assert Equals(b.results, ['n:1', 'n:2', 'e:3'])
+      End
+
+      It executes the subscriber and emits events to a given observer asynchronously and independently
+        function! s:subscriber(observer) abort closure
+          call Later.call({ -> a:observer.next(1) })
+          call Later.call({ -> a:observer.next(2) })
+          call Later.call({ -> a:observer.complete() })
+        endfunction
+
+        let b1 = BufferObserver()
+        let b2 = BufferObserver()
+        let s1 = Observable.new(funcref('s:subscriber')).subscribe(b1)
+        let s2 = Observable.new(funcref('s:subscriber')).subscribe(b2)
+        Assert Equals(Observable.wait([s1, s2], 50), 0)
+        Assert Equals(b1.results, ['n:1', 'n:2', 'c'])
+        Assert Equals(b2.results, ['n:1', 'n:2', 'c'])
+      End
+
+      It follows an example code in a help
+        function! s:subscriber(o) abort closure
+          if a:o.closed()
+            return
+          endif
+          let timers = [
+                \ timer_start(0, { -> a:o.next(1) }),
+                \ timer_start(50, { -> a:o.next(2) }),
+                \ timer_start(100, { -> a:o.next(3) }),
+                \ timer_start(150, { -> a:o.complete() }),
+                \]
+          return { -> map(timers, { -> timer_stop(v:val) }) }
+        endfunction
+
+        let rs = []
+        let o = Observable.new(funcref('s:subscriber'))
+        let s = o.subscribe({ v -> add(rs, v) })
+        Assert Equals(Observable.wait(s, 300), 0)
+        Assert Equals(rs, [1, 2, 3])
+      End
+    End
+
+    Describe .foreach()
+      It executes the subscriber and return a promise
+        let p = Observable.of(1, 2, 3)
+              \.foreach({ -> 0 })
+        Assert True(Promise.is_promise(p))
+      End
+
+      It executes the subscriber and return a promise which is resolved once the observable complete
+        let ns = []
+        call Observable.of(1, 2, 3)
+              \.foreach({ -> 0 })
+              \.then({ v -> add(ns, printf('resolve:%s', v)) })
+              \.catch({ e -> add(ns, printf('reject:%s', e)) })
+        sleep 100m
+        Assert Equals(ns, ['resolve:v:null'])
+      End
+
+      It executes the subscriber and return a promise which is rejected once the observable error
+        let ns = []
+        call Observable.new({ o -> o.error('hello') })
+              \.foreach({ -> 0 })
+              \.then({ v -> add(ns, printf('resolve:%s', v)) })
+              \.catch({ e -> add(ns, printf('reject:%s', e)) })
+        sleep 100m
+        Assert Equals(ns, ['reject:hello'])
+      End
+
+      It invokes given function with each value in the stream
+        let ns = []
+        call Observable.of(1, 2, 3)
+              \.foreach({ v -> add(ns, v) })
+              \.then({ v -> add(ns, printf('resolve:%s', v)) })
+              \.catch({ e -> add(ns, printf('reject:%s', e)) })
+        sleep 100m
+        Assert Equals(ns, [
+              \ 1,
+              \ 2,
+              \ 3,
+              \ 'resolve:v:null',
+              \])
+      End
+
+      It invokes given function with each value in the stream and done callback which resolve the promise
+        let ns = []
+        call Observable.of(1, 2, 3)
+              \.foreach({ v, done -> [add(ns, v), v is# 2 ? done() : 0] })
+              \.then({ v -> add(ns, printf('resolve:%s', v)) })
+              \.catch({ e -> add(ns, printf('reject:%s', e)) })
+        sleep 100m
+        Assert Equals(ns, [
+              \ 1,
+              \ 2,
+              \ 'resolve:v:null',
+              \])
+      End
+
+      It follows an example code in a help
+        let rs = []
+	let p = Observable.of(1, 2, 3)
+	      \.foreach({ v -> add(rs, printf('f:%s', v)) })
+	      \.then({ v -> add(rs, printf('t:%s', v)) })
+	      \.catch({ e -> add(rs, printf('c:%s', e)) })
+	Assert NotEquals(Promise.wait(p, 50), [v:null, Promise.TimeoutError])
+	Assert Equals(rs, ['f:1', 'f:2', 'f:3', 't:v:null'])
+
+        let rs = []
+	let p = Observable.new({ o -> [o.next(1), o.next(2), o.error(3)] })
+	      \.foreach({ v -> add(rs, printf('f:%s', v)) })
+	      \.then({ v -> add(rs, printf('t:%s', v)) })
+	      \.catch({ e -> add(rs, printf('c:%s', e)) })
+	Assert NotEquals(Promise.wait(p, 50), [v:null, Promise.TimeoutError])
+	Assert Equals(rs, ['f:1', 'f:2', 'c:3'])
+      End
+    End
+
+    Describe .pipe()
+      It returns an observable
+        let o1 = Observable.of(1, 2, 3)
+        let o2 = o1.pipe()
+        Assert True(Observable.is_observable(o2))
+        Assert Same(o1, o2)
+
+        let b1 = BufferObserver()
+        let b2 = BufferObserver()
+        let s1 = o1.subscribe(b1)
+        let s2 = o2.subscribe(b2)
+        Assert False(Observable.wait([s1, s2], 50))
+        Assert Equals(b1.results, ['n:1', 'n:2', 'n:3', 'c'])
+        Assert Equals(b2.results, ['n:1', 'n:2', 'n:3', 'c'])
+      End
+
+      It executes a given operator with a source observable then returns an observable
+        let o1 = Observable.of(1, 2, 3)
+        let o2 = o1.pipe({ source -> source })
+        let o3 = o1.pipe({ source -> Observable.from(source) })
+        Assert True(Observable.is_observable(o2))
+        Assert True(Observable.is_observable(o3))
+        Assert Same(o1, o2)
+        Assert NotSame(o1, o3)
+
+        let b1 = BufferObserver()
+        let b2 = BufferObserver()
+        let b3 = BufferObserver()
+        let s1 = o1.subscribe(b1)
+        let s2 = o2.subscribe(b2)
+        let s3 = o2.subscribe(b3)
+        Assert False(Observable.wait([s1, s2, s3], 50))
+        Assert Equals(b1.results, ['n:1', 'n:2', 'n:3', 'c'])
+        Assert Equals(b2.results, ['n:1', 'n:2', 'n:3', 'c'])
+        Assert Equals(b3.results, ['n:1', 'n:2', 'n:3', 'c'])
+      End
+
+      It executes a given operator with a source observable and a Observable constructor then returns an observable
+        let o1 = Observable.of(1, 2, 3)
+        let o2 = o1.pipe({ _, ctor -> ctor({ observer -> observer.error('hi') }) })
+        Assert True(Observable.is_observable(o2))
+        Assert NotSame(o1, o2)
+
+        let b1 = BufferObserver()
+        let b2 = BufferObserver()
+        let s1 = o1.subscribe(b1)
+        let s2 = o2.subscribe(b2)
+        Assert False(Observable.wait([s1, s2], 50))
+        Assert Equals(b1.results, ['n:1', 'n:2', 'n:3', 'c'])
+        Assert Equals(b2.results, ['e:hi'])
+      End
+
+      It executes given operators one by one then returns a final observable
+        let o1 = Observable.of(1, 2, 3)
+        let o2 = Observable.of(4, 5, 6)
+        let o3 = Observable.of(7, 8, 9)
+        let ns = []
+        let o = o1.pipe(
+              \ { o -> empty(add(ns, o)) ? 0 : o2 },
+              \ { o -> empty(add(ns, o)) ? 0 : o3 },
+              \)
+        Assert Equals(ns, [o1, o2])
+        Assert Same(o3, o)
+      End
+
+      It follows an example code in a help
+        function! s:subscriber(s, o) abort
+          return a:s.subscribe(
+                \ { v -> a:o.next(v * 2) },
+                \ { e -> a:o.error(e) },
+                \ { -> a:o.complete() },
+                \)
+        endfunction
+
+        let Twice = { s, ctor -> ctor(funcref('s:subscriber', [s])) }
+
+        let rs = []
+        let o = Observable.of(1, 2, 3).pipe(
+              \ Twice,
+              \ Twice,
+              \ Twice,
+              \)
+        let s = o.subscribe({ v -> add(rs, v) })
+        Assert False(Observable.wait(s, 50))
+        Assert Equals(rs, [8, 16, 24])
+      End
+    End
+  End
+End
