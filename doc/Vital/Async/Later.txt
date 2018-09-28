@@ -57,7 +57,7 @@ FUNCTION 				*Vital.Async.Later-function*
 	busy. For convenience, {arglist} can be omit.
 
 	When an exception is thrown in {task}, the exception is caught and
-	echomsg by |Vital.Error| module internally.
+	echomsg with |hl-ErrorMsg|.
 
 	Internally, it queues {task} in an internal task queue and start an
 	internal timer to execute a task. If the internal timer is already

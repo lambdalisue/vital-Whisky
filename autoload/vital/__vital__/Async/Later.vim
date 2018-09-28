@@ -3,14 +3,6 @@ let s:timer = v:null
 
 let s:DEFAULT_WAIT_INTERVAL = 30
 
-function! s:_vital_loaded(V) abort
-  let s:Error = a:V.import('Error')
-endfunction
-
-function! s:_vital_depends() abort
-  return ['Error']
-endfunction
-
 function! s:_vital_healthcheck() abort
   if (v:version >= 800 && !has('nvim')) || has('nvim-0.2.0')
     return
@@ -40,7 +32,12 @@ function! s:_callback(timer) abort
   try
     call call('call', remove(s:tasks, 0))
   catch
-    call s:Error.catch().echomsg()
+    let ms = split(v:exception . "\n" . v:throwpoint, '\r\?\n')
+    echohl ErrorMsg
+    for m in ms
+      echomsg m
+    endfor
+    echohl None
   endtry
   call s:_emit()
 endfunction
