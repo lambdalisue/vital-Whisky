@@ -10,15 +10,15 @@ function! s:start(args, options) abort
     let job_options.cwd = a:options.cwd
   endif
   if has_key(job, 'on_stdout')
-    let job_options.on_stdout = function('s:_on_stdout', [job])
+    let job_options.on_stdout = funcref('s:_on_stdout', [job])
   endif
   if has_key(job, 'on_stderr')
-    let job_options.on_stderr = function('s:_on_stderr', [job])
+    let job_options.on_stderr = funcref('s:_on_stderr', [job])
   endif
   if has_key(job, 'on_exit')
-    let job_options.on_exit = function('s:_on_exit', [job])
+    let job_options.on_exit = funcref('s:_on_exit', [job])
   else
-    let job_options.on_exit = function('s:_on_exit_raw', [job])
+    let job_options.on_exit = funcref('s:_on_exit_raw', [job])
   endif
   let job.__job = jobstart(a:args, job_options)
   let job.__exitval = v:null
@@ -114,11 +114,11 @@ endfunction
 
 " To make debug easier, use funcref instead.
 let s:job = {
-      \ 'id': function('s:_job_id'),
-      \ 'pid': function('s:_job_pid'),
-      \ 'status': function('s:_job_status'),
-      \ 'send': function('s:_job_send'),
-      \ 'close': function('s:_job_close'),
-      \ 'stop': function('s:_job_stop'),
-      \ 'wait': function('s:_job_wait'),
+      \ 'id': funcref('s:_job_id'),
+      \ 'pid': funcref('s:_job_pid'),
+      \ 'status': funcref('s:_job_status'),
+      \ 'send': funcref('s:_job_send'),
+      \ 'close': funcref('s:_job_close'),
+      \ 'stop': funcref('s:_job_stop'),
+      \ 'wait': funcref('s:_job_wait'),
       \}
