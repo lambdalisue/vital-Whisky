@@ -1,0 +1,121 @@
+*Vital/Async/Process.txt*	Asynchronous process executer
+
+Author : Alisue <lambdalisue@hashnote.net>
+License: MIT license
+Support: Vim 8.0.0027 and above (prefer 8.0.0107 and above)
+Support: Neovim 0.2.0 and above
+
+
+=============================================================================
+CONTENTS			*Vital.Async.Process-content*
+
+INTRODUCTION			|Vital.Async.Process-introduction|
+USAGE				|Vital.Async.Process-usage|
+INTERFACE			|Vital.Async.Process-interface|
+  FUNCTION			|Vital.Async.Process-function|
+
+
+=============================================================================
+INTRODUCTION			*Vital.Async.Process-introduction*
+
+*Vital.Async.Process* is a module to execute an external process
+asynchronously via asynchronous utilities.
+
+See also
+|Vital.Async.Promise|
+|Vital.Async.Observable|
+|Vital.Async.CancellationToken|
+|Vital.Async.CancellationTokenSource|
+
+
+=============================================================================
+USAGE				*Vital.Async.Process-usage*
+
+>
+	let Process = vital#{plugin}#import('Async.Process')
+	let Promise = vital#{plugin}#import('Async.Promise')
+	let CancellationTokenSource = vital#{plugin}#import(
+	      \ 'Async.CancellationTokenSource',
+	      \)
+
+	let s = CancellationTokenSource.new()
+	let r = Process.start(['python', 'stdin.py'], {
+	      \ 'token': s.token,
+	      \})
+
+	" Subscribe stdout/stderr channels
+	let d = {'stdout': [], 'stderr': []}
+	call r.stdout.subscribe({ v -> add(d.stdout, v) })
+	call r.stderr.subscribe({ v -> add(d.stderr, v) })
+
+	" Send 'Hello\nWorld' to the process and close the channel
+	call r.stdin.next(['Hello'])
+	call r.stdin.next(['Hello'])
+	call r.stdin.complete()
+
+	" Cancel process
+	call s.cancel()
+
+	" Wait until process terminate
+	call Promise.wait(r.status)
+<
+
+=============================================================================
+INTERFACE			*Vital.Async.Process-interface*
+
+-----------------------------------------------------------------------------
+FUNCTION			*Vital.Async.Process-function*
+
+			*Vital.Async.Process.start()*
+.start({args}[, {options}])
+	Start a new external process via System.Job and returns a {result}
+	instance.
+
+	The {result} instance has the following methods
+
+	"pid"		Returns a PID of the process.
+	"status"	Returns an Async.Promise instance which resolved
+			with exit status when the process has terminated.
+	"stdin"		An observer instance of Async.Observable to send
+			data into stdin channel of the process.
+	"stdout"	An observable instance of Async.Observable to read
+			data from stdout channel of the process.
+	"stderr"	An observable instance of Async.Observable to read
+			data from stderr channel of the process.
+
+	And the following attributes are allowed in the {options} 
+
+	"token"		Async.CancellationToken instance to cancel the
+			external process.
+	"stdin"		False to disable stdin observer.
+	"stdout"	False to disable stdout observable.
+	"stderr"	False to disable stderr observable.
+	"cwd"		Current working directory to execute the process.
+
+			*Vital.Async.Process.read()*
+.read({channel})
+	Subscribe a given {channel} and returns an Async.Promise instance
+	which resolved with the accumulated data.
+>
+	let r = Process.start(['python', 'echo.py'])
+	let p = Process.read(r.stdout)
+	call p.then({ v -> execute('echo join(v, "\n")', '') })
+	" stdout
+	" HelloWorld
+	" This is not line
+<
+
+			*Vital.Async.Process.flatten()*
+.flatten({channel})
+	Subscribe a given {channel} and returns an Async.Observable instance
+	which emits each lines.
+>
+	let r = Process.start(['python', 'echo.py'])
+	let o = Process.flatten(r.stdout)
+	call o.subscribe({ v -> execute('echo v', '') })
+	" stdout
+	" HelloWorld
+	" This is not line
+<
+=============================================================================
+vim:tw=78:fo=tcq2mM:ts=8:ft=help:norl
