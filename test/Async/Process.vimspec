@@ -1,0 +1,847 @@
+Describe Async.Process
+  Before all
+    let TIMEOUT = (!empty($APPVEYOR) || !empty($TRAVIS)) ? 30000 : 5000
+
+    let Observable = vital#vital#import('Async.Observable')
+    let Path = vital#vital#import('System.Filepath')
+    let File = vital#vital#import('System.File')
+    let Sandbox = vital#vital#import('System.Sandbox')
+
+    let root = Path.abspath(Path.realpath('test/_testdata/System/Job'))
+
+    function! Args(script, ...) abort closure
+      let p = executable('python3') ? 'python3' : 'python'
+      let s = Path.join(root, a:script)
+      return [p, s] + a:000
+    endfunction
+
+    function! BufferObserver() abort
+      let b = { 'results': [] }
+      return extend(b, {
+            \ 'next': { v -> add(b.results, printf('n:%s', v)) },
+            \ 'error': { e -> add(b.results, printf('e:%s', e)) },
+            \ 'complete': { -> add(b.results, 'c') },
+            \})
+    endfunction
+  End
+
+  Before
+    let Process = healthcheck#vital#import('Async.Process')
+  End
+
+  Describe .operators
+    Describe .focus()
+      Before all
+        function! s:subscriber(observer) abort
+          call a:observer.next({'pid': 0})
+
+          call a:observer.next({'stdout': ['Hello']})
+          call a:observer.next({'stderr': ['Hello']})
+
+          call a:observer.next({'stdout': [' World']})
+          call a:observer.next({'stderr': [' World']})
+
+          call a:observer.next({'stdout': ['', '']})
+          call a:observer.next({'stderr': ['', '']})
+
+          call a:observer.next({'stdout': ['Hello', 'Darkness', 'M']})
+          call a:observer.next({'stderr': ['Hello', 'Darkness', 'M']})
+
+          call a:observer.next({'stdout': ['y', 'Old', 'Friend', '']})
+          call a:observer.next({'stderr': ['y', 'Old', 'Friend', '']})
+
+          call a:observer.next({'stdout': ['This is not line']})
+          call a:observer.next({'stderr': ['This is not line']})
+
+          call a:observer.complete()
+        endfunction
+      End
+
+      It is similar to 'pluck' operator but keeps the object structure (stdout)
+        let b = BufferObserver()
+        let p = Observable.new(funcref('s:subscriber'))
+        let p = p.pipe(Process.operators.focus('stdout'))
+        let s = p.subscribe(b)
+        Assert False(Observable.wait(s, TIMEOUT))
+        Assert Equals(b.results, [
+              \ printf('n:%s', { 'stdout': ['Hello'] }),
+              \ printf('n:%s', { 'stdout': [' World'] }),
+              \ printf('n:%s', { 'stdout': ['', ''] }),
+              \ printf('n:%s', { 'stdout': ['Hello', 'Darkness', 'M'] }),
+              \ printf('n:%s', { 'stdout': ['y', 'Old', 'Friend', ''] }),
+              \ printf('n:%s', { 'stdout': ['This is not line'] }),
+              \ 'c',
+              \])
+      End
+
+      It is similar to 'pluck' operator but keeps the object structure (stderr)
+        let b = BufferObserver()
+        let p = Observable.new(funcref('s:subscriber'))
+        let p = p.pipe(Process.operators.focus('stderr'))
+        let s = p.subscribe(b)
+        Assert False(Observable.wait(s, TIMEOUT))
+        Assert Equals(b.results, [
+              \ printf('n:%s', { 'stderr': ['Hello'] }),
+              \ printf('n:%s', { 'stderr': [' World'] }),
+              \ printf('n:%s', { 'stderr': ['', ''] }),
+              \ printf('n:%s', { 'stderr': ['Hello', 'Darkness', 'M'] }),
+              \ printf('n:%s', { 'stderr': ['y', 'Old', 'Friend', ''] }),
+              \ printf('n:%s', { 'stderr': ['This is not line'] }),
+              \ 'c',
+              \])
+      End
+
+      It is similar to 'pluck' operator but allow only single level
+        let p = Observable.new(funcref('s:subscriber'))
+        Throws /Too many arguments for function/ p.pipe(Process.operators.focus('stdout', 'foo'))
+      End
+    End
+
+    Describe .squash()
+      Before all
+        function! s:subscriber(observer) abort
+          call a:observer.next({'pid': 0})
+
+          call a:observer.next({'stdout': ['Hello']})
+          call a:observer.next({'stderr': ['Hello']})
+
+          call a:observer.next({'stdout': [' World']})
+          call a:observer.next({'stderr': [' World']})
+
+          call a:observer.next({'stdout': ['', '']})
+          call a:observer.next({'stderr': ['', '']})
+
+          call a:observer.next({'stdout': ['Hello', 'Darkness', 'M']})
+          call a:observer.next({'stderr': ['Hello', 'Darkness', 'M']})
+
+          call a:observer.next({'stdout': ['y', 'Old', 'Friend', '']})
+          call a:observer.next({'stderr': ['y', 'Old', 'Friend', '']})
+
+          call a:observer.next({'stdout': ['This is not line']})
+          call a:observer.next({'stderr': ['This is not line']})
+
+          call a:observer.complete()
+        endfunction
+      End
+
+      It squashes a given object field to line blocks (stdout)
+        let b = BufferObserver()
+        let p = Observable.new(funcref('s:subscriber'))
+        let p = p.pipe(Process.operators.squash('stdout'))
+        let s = p.subscribe(b)
+        Assert False(Observable.wait(s, TIMEOUT))
+        Assert Equals(b.results[1:], [
+              \ printf('n:%s', { 'stderr': ['Hello'] }),
+              \ printf('n:%s', { 'stderr': [' World'] }),
+              \ printf('n:%s', { 'stdout': ['Hello World'] }),
+              \ printf('n:%s', { 'stderr': ['', ''] }),
+              \ printf('n:%s', { 'stdout': ['Hello', 'Darkness'] }),
+              \ printf('n:%s', { 'stderr': ['Hello', 'Darkness', 'M'] }),
+              \ printf('n:%s', { 'stdout': ['My', 'Old', 'Friend'] }),
+              \ printf('n:%s', { 'stderr': ['y', 'Old', 'Friend', ''] }),
+              \ printf('n:%s', { 'stderr': ['This is not line'] }),
+              \ printf('n:%s', { 'stdout': ['This is not line'] }),
+              \ 'c',
+              \])
+      End
+
+      It squashes a given object field to line blocks (stderr)
+        let b = BufferObserver()
+        let p = Observable.new(funcref('s:subscriber'))
+        let p = p.pipe(Process.operators.squash('stderr'))
+        let s = p.subscribe(b)
+        Assert False(Observable.wait(s, TIMEOUT))
+        Assert Equals(b.results[1:], [
+              \ printf('n:%s', { 'stdout': ['Hello'] }),
+              \ printf('n:%s', { 'stdout': [' World'] }),
+              \ printf('n:%s', { 'stdout': ['', ''] }),
+              \ printf('n:%s', { 'stderr': ['Hello World'] }),
+              \ printf('n:%s', { 'stdout': ['Hello', 'Darkness', 'M'] }),
+              \ printf('n:%s', { 'stderr': ['Hello', 'Darkness'] }),
+              \ printf('n:%s', { 'stdout': ['y', 'Old', 'Friend', ''] }),
+              \ printf('n:%s', { 'stderr': ['My', 'Old', 'Friend'] }),
+              \ printf('n:%s', { 'stdout': ['This is not line'] }),
+              \ printf('n:%s', { 'stderr': ['This is not line'] }),
+              \ 'c',
+              \])
+      End
+
+      It squashes given object fields to line blocks (stdout/stderr)
+        let b = BufferObserver()
+        let p = Observable.new(funcref('s:subscriber'))
+        let p = p.pipe(
+              \ Process.operators.squash('stdout'),
+              \ Process.operators.squash('stderr'),
+              \)
+        let s = p.subscribe(b)
+        Assert False(Observable.wait(s, TIMEOUT))
+        Assert Equals(b.results[1:], [
+              \ printf('n:%s', { 'stdout': ['Hello World'] }),
+              \ printf('n:%s', { 'stderr': ['Hello World'] }),
+              \ printf('n:%s', { 'stdout': ['Hello', 'Darkness'] }),
+              \ printf('n:%s', { 'stderr': ['Hello', 'Darkness'] }),
+              \ printf('n:%s', { 'stdout': ['My', 'Old', 'Friend'] }),
+              \ printf('n:%s', { 'stderr': ['My', 'Old', 'Friend'] }),
+              \ printf('n:%s', { 'stdout': ['This is not line'] }),
+              \ printf('n:%s', { 'stderr': ['This is not line'] }),
+              \ 'c',
+              \])
+      End
+    End
+
+    Describe .stretch()
+      Before all
+        function! s:subscriber(observer) abort
+          call a:observer.next({'pid': 0})
+
+          call a:observer.next({'stdout': ['Hello']})
+          call a:observer.next({'stderr': ['Hello']})
+
+          call a:observer.next({'stdout': [' World']})
+          call a:observer.next({'stderr': [' World']})
+
+          call a:observer.next({'stdout': ['', '']})
+          call a:observer.next({'stderr': ['', '']})
+
+          call a:observer.next({'stdout': ['Hello', 'Darkness', 'M']})
+          call a:observer.next({'stderr': ['Hello', 'Darkness', 'M']})
+
+          call a:observer.next({'stdout': ['y', 'Old', 'Friend', '']})
+          call a:observer.next({'stderr': ['y', 'Old', 'Friend', '']})
+
+          call a:observer.next({'stdout': ['This is not line']})
+          call a:observer.next({'stderr': ['This is not line']})
+
+          call a:observer.complete()
+        endfunction
+      End
+
+      It stretch a given object field and emits each line (stdout)
+        let b = BufferObserver()
+        let p = Observable.new(funcref('s:subscriber'))
+        let p = p.pipe(Process.operators.stretch('stdout'))
+        let s = p.subscribe(b)
+        Assert False(Observable.wait(s, TIMEOUT))
+        Assert Equals(b.results[1:], [
+              \ printf('n:%s', { 'stdout': 'Hello' }),
+              \ printf('n:%s', { 'stderr': ['Hello'] }),
+              \ printf('n:%s', { 'stdout': ' World' }),
+              \ printf('n:%s', { 'stderr': [' World'] }),
+              \ printf('n:%s', { 'stdout': '' }),
+              \ printf('n:%s', { 'stdout': '' }),
+              \ printf('n:%s', { 'stderr': ['', ''] }),
+              \ printf('n:%s', { 'stdout': 'Hello' }),
+              \ printf('n:%s', { 'stdout': 'Darkness' }),
+              \ printf('n:%s', { 'stdout': 'M' }),
+              \ printf('n:%s', { 'stderr': ['Hello', 'Darkness', 'M'] }),
+              \ printf('n:%s', { 'stdout': 'y' }),
+              \ printf('n:%s', { 'stdout': 'Old' }),
+              \ printf('n:%s', { 'stdout': 'Friend' }),
+              \ printf('n:%s', { 'stdout': '' }),
+              \ printf('n:%s', { 'stderr': ['y', 'Old', 'Friend', ''] }),
+              \ printf('n:%s', { 'stdout': 'This is not line' }),
+              \ printf('n:%s', { 'stderr': ['This is not line'] }),
+              \ 'c',
+              \])
+      End
+
+      It stretch a given object field and emits each line (stderr)
+        let b = BufferObserver()
+        let p = Observable.new(funcref('s:subscriber'))
+        let p = p.pipe(Process.operators.stretch('stderr'))
+        let s = p.subscribe(b)
+        Assert False(Observable.wait(s, TIMEOUT))
+        Assert Equals(b.results[1:], [
+              \ printf('n:%s', { 'stdout': ['Hello'] }),
+              \ printf('n:%s', { 'stderr': 'Hello' }),
+              \ printf('n:%s', { 'stdout': [' World'] }),
+              \ printf('n:%s', { 'stderr': ' World' }),
+              \ printf('n:%s', { 'stdout': ['', ''] }),
+              \ printf('n:%s', { 'stderr': '' }),
+              \ printf('n:%s', { 'stderr': '' }),
+              \ printf('n:%s', { 'stdout': ['Hello', 'Darkness', 'M'] }),
+              \ printf('n:%s', { 'stderr': 'Hello' }),
+              \ printf('n:%s', { 'stderr': 'Darkness' }),
+              \ printf('n:%s', { 'stderr': 'M' }),
+              \ printf('n:%s', { 'stdout': ['y', 'Old', 'Friend', ''] }),
+              \ printf('n:%s', { 'stderr': 'y' }),
+              \ printf('n:%s', { 'stderr': 'Old' }),
+              \ printf('n:%s', { 'stderr': 'Friend' }),
+              \ printf('n:%s', { 'stderr': '' }),
+              \ printf('n:%s', { 'stdout': ['This is not line'] }),
+              \ printf('n:%s', { 'stderr': 'This is not line' }),
+              \ 'c',
+              \])
+      End
+
+      It stretch given object fields and emits each line (stdout/stderr)
+        let b = BufferObserver()
+        let p = Observable.new(funcref('s:subscriber'))
+        let p = p.pipe(
+              \ Process.operators.stretch('stdout'),
+              \ Process.operators.stretch('stderr'),
+              \)
+        let s = p.subscribe(b)
+        Assert False(Observable.wait(s, TIMEOUT))
+        Assert Equals(b.results[1:], [
+              \ printf('n:%s', { 'stdout': 'Hello' }),
+              \ printf('n:%s', { 'stderr': 'Hello' }),
+              \ printf('n:%s', { 'stdout': ' World' }),
+              \ printf('n:%s', { 'stderr': ' World' }),
+              \ printf('n:%s', { 'stdout': '' }),
+              \ printf('n:%s', { 'stdout': '' }),
+              \ printf('n:%s', { 'stderr': '' }),
+              \ printf('n:%s', { 'stderr': '' }),
+              \ printf('n:%s', { 'stdout': 'Hello' }),
+              \ printf('n:%s', { 'stdout': 'Darkness' }),
+              \ printf('n:%s', { 'stdout': 'M' }),
+              \ printf('n:%s', { 'stderr': 'Hello' }),
+              \ printf('n:%s', { 'stderr': 'Darkness' }),
+              \ printf('n:%s', { 'stderr': 'M' }),
+              \ printf('n:%s', { 'stdout': 'y' }),
+              \ printf('n:%s', { 'stdout': 'Old' }),
+              \ printf('n:%s', { 'stdout': 'Friend' }),
+              \ printf('n:%s', { 'stdout': '' }),
+              \ printf('n:%s', { 'stderr': 'y' }),
+              \ printf('n:%s', { 'stderr': 'Old' }),
+              \ printf('n:%s', { 'stderr': 'Friend' }),
+              \ printf('n:%s', { 'stderr': '' }),
+              \ printf('n:%s', { 'stdout': 'This is not line' }),
+              \ printf('n:%s', { 'stderr': 'This is not line' }),
+              \ 'c',
+              \])
+      End
+
+      It emits each complete line when combined with squash
+        let b = BufferObserver()
+        let p = Observable.new(funcref('s:subscriber'))
+        let p = p.pipe(
+              \ Process.operators.squash('stdout'),
+              \ Process.operators.squash('stderr'),
+              \ Process.operators.stretch('stdout'),
+              \ Process.operators.stretch('stderr'),
+              \)
+        let s = p.subscribe(b)
+        Assert False(Observable.wait(s, TIMEOUT))
+        Assert Equals(b.results[1:], [
+              \ printf('n:%s', { 'stdout': 'Hello World' }),
+              \ printf('n:%s', { 'stderr': 'Hello World' }),
+              \ printf('n:%s', { 'stdout': 'Hello' }),
+              \ printf('n:%s', { 'stdout': 'Darkness' }),
+              \ printf('n:%s', { 'stderr': 'Hello' }),
+              \ printf('n:%s', { 'stderr': 'Darkness' }),
+              \ printf('n:%s', { 'stdout': 'My' }),
+              \ printf('n:%s', { 'stdout': 'Old' }),
+              \ printf('n:%s', { 'stdout': 'Friend' }),
+              \ printf('n:%s', { 'stderr': 'My' }),
+              \ printf('n:%s', { 'stderr': 'Old' }),
+              \ printf('n:%s', { 'stderr': 'Friend' }),
+              \ printf('n:%s', { 'stdout': 'This is not line' }),
+              \ printf('n:%s', { 'stderr': 'This is not line' }),
+              \ 'c',
+              \])
+      End
+    End
+
+    Describe .pile()
+      Before all
+        function! s:subscriber(observer) abort
+          call a:observer.next({'pid': 0})
+
+          call a:observer.next({'stdout': ['Hello']})
+          call a:observer.next({'stderr': ['Hello']})
+
+          call a:observer.next({'stdout': [' World']})
+          call a:observer.next({'stderr': [' World']})
+
+          call a:observer.next({'stdout': ['', '']})
+          call a:observer.next({'stderr': ['', '']})
+
+          call a:observer.next({'stdout': ['Hello', 'Darkness', 'M']})
+          call a:observer.next({'stderr': ['Hello', 'Darkness', 'M']})
+
+          call a:observer.next({'stdout': ['y', 'Old', 'Friend', '']})
+          call a:observer.next({'stderr': ['y', 'Old', 'Friend', '']})
+
+          call a:observer.next({'stdout': ['This is not line']})
+          call a:observer.next({'stderr': ['This is not line']})
+
+          call a:observer.complete()
+        endfunction
+      End
+
+      It emits each complete line blocks of a given object field
+        let b = BufferObserver()
+        let p = Observable.new(funcref('s:subscriber'))
+        let p = p.pipe(
+              \ Process.operators.pile('stdout'),
+              \)
+        let s = p.subscribe(b)
+        Assert False(Observable.wait(s, TIMEOUT))
+        Assert Equals(b.results, [
+              \ printf('n:%s', ['Hello World']),
+              \ printf('n:%s', ['Hello', 'Darkness']),
+              \ printf('n:%s', ['My', 'Old', 'Friend']),
+              \ printf('n:%s', ['This is not line']),
+              \ 'c',
+              \])
+      End
+    End
+
+    Describe .line()
+      Before all
+        function! s:subscriber(observer) abort
+          call a:observer.next({'pid': 0})
+
+          call a:observer.next({'stdout': ['Hello']})
+          call a:observer.next({'stderr': ['Hello']})
+
+          call a:observer.next({'stdout': [' World']})
+          call a:observer.next({'stderr': [' World']})
+
+          call a:observer.next({'stdout': ['', '']})
+          call a:observer.next({'stderr': ['', '']})
+
+          call a:observer.next({'stdout': ['Hello', 'Darkness', 'M']})
+          call a:observer.next({'stderr': ['Hello', 'Darkness', 'M']})
+
+          call a:observer.next({'stdout': ['y', 'Old', 'Friend', '']})
+          call a:observer.next({'stderr': ['y', 'Old', 'Friend', '']})
+
+          call a:observer.next({'stdout': ['This is not line']})
+          call a:observer.next({'stderr': ['This is not line']})
+
+          call a:observer.complete()
+        endfunction
+      End
+
+      It emits each complete lines of a given object field
+        let b = BufferObserver()
+        let p = Observable.new(funcref('s:subscriber'))
+        let p = p.pipe(
+              \ Process.operators.line('stdout'),
+              \)
+        let s = p.subscribe(b)
+        Assert False(Observable.wait(s, TIMEOUT))
+        Assert Equals(b.results, [
+              \ printf('n:%s', 'Hello World'),
+              \ printf('n:%s', 'Hello'),
+              \ printf('n:%s', 'Darkness'),
+              \ printf('n:%s', 'My'),
+              \ printf('n:%s', 'Old'),
+              \ printf('n:%s', 'Friend'),
+              \ printf('n:%s', 'This is not line'),
+              \ 'c',
+              \])
+      End
+    End
+  End
+
+  Describe .new()
+    if !has('patch-8.0.0107') && !has('nvim-0.2.0')
+      It throws an exception in Vim prior to 8.0.0107 or Neovim prior to 0.2.0
+        Throws /is not supported/ Process.new(Args('echo.py'))
+      End
+    else
+      It creates a new Process instance (Observable)
+        let p = Process.new(Args('echo.py'))
+        Assert True(Observable.is_observable(p))
+      End
+
+      It creates a new Process instance with options (Observable)
+        let p = Process.new(Args('echo.py'), {
+              \ 'cwd': getcwd(),
+              \ 'stdin': ['Hello'],
+              \})
+        Assert True(Observable.is_observable(p))
+      End
+    endif
+  End
+
+  Describe Process instance
+    Before
+      if !has('patch-8.0.0107') && !has('nvim-0.2.0')
+        Skip Prior to Vim 8.0.0107 or Neovim 0.2.0 is not supported
+      endif
+    End
+
+    Context next:pid event
+      It emits {'pid': ...} immediately
+        let b = BufferObserver()
+        let p = Process.new(Args('echo.py'))
+        let s = p.subscribe(b)
+        Assert Compare(len(b.results), '>=', 1)
+        Assert Match(b.results[0], "n:{'pid': \\d\\+}")
+        Assert False(Observable.wait(s, TIMEOUT))
+      End
+    End
+
+    Context next:stdout event
+      It emits {'stdout': ...} when the process flush the stdout stream (CR)
+        let b = BufferObserver()
+        let p = Process.new(Args('echo.py', '--out', 'stdout', '--newline', "\r"))
+        let s = p.subscribe(b)
+        Assert False(Observable.wait(s, TIMEOUT))
+        Assert Equals(b.results[1:], [
+              \ printf('n:%s', { 'stdout': ['Hello'] }),
+              \ printf('n:%s', { 'stdout': [' World'] }),
+              \ printf('n:%s', { 'stdout': [''] }),
+              \ printf('n:%s', { 'stdout': ['Hello'] }),
+              \ printf('n:%s', { 'stdout': [' World'] }),
+              \ printf('n:%s', { 'stdout': [''] }),
+              \ 'c',
+              \])
+      End
+
+      It emits {'stdout': ...} when the process flush the stdout stream (LF)
+        let b = BufferObserver()
+        let p = Process.new(Args('echo.py', '--out', 'stdout', '--newline', "\n"))
+        let s = p.subscribe(b)
+        Assert False(Observable.wait(s, TIMEOUT))
+        Assert Equals(b.results[1:], [
+              \ printf('n:%s', { 'stdout': ['Hello'] }),
+              \ printf('n:%s', { 'stdout': [' World'] }),
+              \ printf('n:%s', { 'stdout': ['', ''] }),
+              \ printf('n:%s', { 'stdout': ['Hello'] }),
+              \ printf('n:%s', { 'stdout': [' World'] }),
+              \ printf('n:%s', { 'stdout': ['', ''] }),
+              \ 'c',
+              \])
+      End
+
+      It emits {'stdout': ...} when the process flush the stdout stream (CRLF)
+        let b = BufferObserver()
+        let p = Process.new(Args('echo.py', '--out', 'stdout', '--newline', "\r\n"))
+        let s = p.subscribe(b)
+        Assert False(Observable.wait(s, TIMEOUT))
+        Assert Equals(b.results[1:], [
+              \ printf('n:%s', { 'stdout': ['Hello'] }),
+              \ printf('n:%s', { 'stdout': [' World'] }),
+              \ printf('n:%s', { 'stdout': ['', ''] }),
+              \ printf('n:%s', { 'stdout': ['Hello'] }),
+              \ printf('n:%s', { 'stdout': [' World'] }),
+              \ printf('n:%s', { 'stdout': ['', ''] }),
+              \ 'c',
+              \])
+      End
+    End
+
+    Context next:stderr event
+      It emits {'stderr': ...} when the process flush the stderr stream (CR)
+        let b = BufferObserver()
+        let p = Process.new(Args('echo.py', '--out', 'stderr', '--newline', "\r"))
+        let s = p.subscribe(b)
+        Assert False(Observable.wait(s, TIMEOUT))
+        Assert Equals(b.results[1:], [
+              \ printf('n:%s', { 'stderr': ['Hello'] }),
+              \ printf('n:%s', { 'stderr': [' World'] }),
+              \ printf('n:%s', { 'stderr': [''] }),
+              \ printf('n:%s', { 'stderr': ['Hello'] }),
+              \ printf('n:%s', { 'stderr': [' World'] }),
+              \ printf('n:%s', { 'stderr': [''] }),
+              \ 'c',
+              \])
+      End
+
+      It emits {'stderr': ...} when the process flush the stderr stream (LF)
+        let b = BufferObserver()
+        let p = Process.new(Args('echo.py', '--out', 'stderr', '--newline', "\n"))
+        let s = p.subscribe(b)
+        Assert False(Observable.wait(s, TIMEOUT))
+        Assert Equals(b.results[1:], [
+              \ printf('n:%s', { 'stderr': ['Hello'] }),
+              \ printf('n:%s', { 'stderr': [' World'] }),
+              \ printf('n:%s', { 'stderr': ['', ''] }),
+              \ printf('n:%s', { 'stderr': ['Hello'] }),
+              \ printf('n:%s', { 'stderr': [' World'] }),
+              \ printf('n:%s', { 'stderr': ['', ''] }),
+              \ 'c',
+              \])
+      End
+
+      It emits {'stderr': ...} when the process flush the stderr stream (CRLF)
+        let b = BufferObserver()
+        let p = Process.new(Args('echo.py', '--out', 'stderr', '--newline', "\r\n"))
+        let s = p.subscribe(b)
+        Assert False(Observable.wait(s, TIMEOUT))
+        Assert Equals(b.results[1:], [
+              \ printf('n:%s', { 'stderr': ['Hello'] }),
+              \ printf('n:%s', { 'stderr': [' World'] }),
+              \ printf('n:%s', { 'stderr': ['', ''] }),
+              \ printf('n:%s', { 'stderr': ['Hello'] }),
+              \ printf('n:%s', { 'stderr': [' World'] }),
+              \ printf('n:%s', { 'stderr': ['', ''] }),
+              \ 'c',
+              \])
+      End
+    End
+
+    Context complete event
+      It emits complete when the process terminate with exitval 0
+        let b = BufferObserver()
+        let p = Process.new(Args('exit.py'))
+        let s = p.subscribe(b)
+        Assert False(Observable.wait(s, TIMEOUT))
+        Assert Equals(b.results[1:], ['c'])
+      End
+    End
+
+    Context error event
+      It emits error with exitval when the process terminate with exitval not 0
+        let b = BufferObserver()
+        let p = Process.new(Args('exit.py', '--exitval', '2'))
+        let s = p.subscribe(b)
+        Assert False(Observable.wait(s, TIMEOUT))
+        Assert Equals(b.results[1:], ['e:2'])
+      End
+    End
+
+    if has('patch-8.0.0902') || has('nvim')
+      Context cwd option
+        Before all
+          let sandbox = Sandbox.new()
+        End
+
+        After all
+          call sandbox.dispose()
+        End
+
+        Before
+          call sandbox.return()
+        End
+
+        It executes process in a current working directory
+          let b = BufferObserver()
+          let p = Process.new(Args('cwd.py'))
+
+          " Change cwd
+          call sandbox.visit('foo')
+          call sandbox.visit('bar')
+
+          let s = p.subscribe(b)
+          Assert False(Observable.wait(s, TIMEOUT))
+          Assert Equals(b.results[1:], [
+                \ printf('n:%s', { 'stdout': [sandbox.path('bar'), ''] }),
+                \ 'c',
+                \])
+        End
+
+        It executes process in a given cwd
+          let b = BufferObserver()
+          let p = Process.new(Args('cwd.py'), {
+                \ 'cwd': sandbox.path('foo'),
+                \})
+
+          " Change cwd
+          call sandbox.visit('foo')
+          call sandbox.visit('bar')
+
+          let s = p.subscribe(b)
+          Assert False(Observable.wait(s, TIMEOUT))
+          Assert Equals(b.results[1:], [
+                \ printf('n:%s', { 'stdout': [sandbox.path('foo'), ''] }),
+                \ 'c',
+                \])
+        End
+      End
+    endif
+
+    Context raw option
+      Context next:stdout event
+        It emits raw {'stdout': ...} when the process flush the stdout stream (LF)
+          let b = BufferObserver()
+          let p = Process.new(Args('echo.py', '--out', 'stdout', '--newline', "\n"), { 'raw': v:true })
+          let s = p.subscribe(b)
+          Assert False(Observable.wait(s, TIMEOUT))
+          Assert Equals(b.results[1:], [
+                \ printf('n:%s', { 'stdout': ['Hello'] }),
+                \ printf('n:%s', { 'stdout': [' World'] }),
+                \ printf('n:%s', { 'stdout': ['', ''] }),
+                \ printf('n:%s', { 'stdout': ['Hello'] }),
+                \ printf('n:%s', { 'stdout': [' World'] }),
+                \ printf('n:%s', { 'stdout': ['', ''] }),
+                \ 'c',
+                \])
+        End
+
+        It emits raw {'stdout': ...} when the process flush the stdout stream (CR)
+          let b = BufferObserver()
+          let p = Process.new(Args('echo.py', '--out', 'stdout', '--newline', "\r"), {'raw': v:true})
+          let s = p.subscribe(b)
+          Assert False(Observable.wait(s, TIMEOUT))
+          Assert Equals(b.results[1:], [
+                \ printf('n:%s', { 'stdout': ['Hello'] }),
+                \ printf('n:%s', { 'stdout': [' World'] }),
+                \ printf('n:%s', { 'stdout': ["\r"] }),
+                \ printf('n:%s', { 'stdout': ['Hello'] }),
+                \ printf('n:%s', { 'stdout': [' World'] }),
+                \ printf('n:%s', { 'stdout': ["\r"] }),
+                \ 'c',
+                \])
+        End
+
+        It emits raw {'stdout': ...} when the process flush the stdout stream (CRLF)
+          let b = BufferObserver()
+          let p = Process.new(Args('echo.py', '--out', 'stdout', '--newline', "\r\n"), {'raw': v:true})
+          let s = p.subscribe(b)
+          Assert False(Observable.wait(s, TIMEOUT))
+          Assert Equals(b.results[1:], [
+                \ printf('n:%s', { 'stdout': ['Hello'] }),
+                \ printf('n:%s', { 'stdout': [' World'] }),
+                \ printf('n:%s', { 'stdout': ["\r", ''] }),
+                \ printf('n:%s', { 'stdout': ['Hello'] }),
+                \ printf('n:%s', { 'stdout': [' World'] }),
+                \ printf('n:%s', { 'stdout': ["\r", ''] }),
+                \ 'c',
+                \])
+        End
+      End
+
+      Context next:stderr event
+        It emits raw {'stderr': ...} when the process flush the stderr stream (LF)
+          let b = BufferObserver()
+          let p = Process.new(Args('echo.py', '--out', 'stderr', '--newline', "\n"), { 'raw': v:true })
+          let s = p.subscribe(b)
+          Assert False(Observable.wait(s, TIMEOUT))
+          Assert Equals(b.results[1:], [
+                \ printf('n:%s', { 'stderr': ['Hello'] }),
+                \ printf('n:%s', { 'stderr': [' World'] }),
+                \ printf('n:%s', { 'stderr': ['', ''] }),
+                \ printf('n:%s', { 'stderr': ['Hello'] }),
+                \ printf('n:%s', { 'stderr': [' World'] }),
+                \ printf('n:%s', { 'stderr': ['', ''] }),
+                \ 'c',
+                \])
+        End
+
+        It emits raw {'stderr': ...} when the process flush the stderr stream (CR)
+          let b = BufferObserver()
+          let p = Process.new(Args('echo.py', '--out', 'stderr', '--newline', "\r"), {'raw': v:true})
+          let s = p.subscribe(b)
+          Assert False(Observable.wait(s, TIMEOUT))
+          Assert Equals(b.results[1:], [
+                \ printf('n:%s', { 'stderr': ['Hello'] }),
+                \ printf('n:%s', { 'stderr': [' World'] }),
+                \ printf('n:%s', { 'stderr': ["\r"] }),
+                \ printf('n:%s', { 'stderr': ['Hello'] }),
+                \ printf('n:%s', { 'stderr': [' World'] }),
+                \ printf('n:%s', { 'stderr': ["\r"] }),
+                \ 'c',
+                \])
+        End
+
+        It emits raw {'stderr': ...} when the process flush the stderr stream (CRLF)
+          let b = BufferObserver()
+          let p = Process.new(Args('echo.py', '--out', 'stderr', '--newline', "\r\n"), {'raw': v:true})
+          let s = p.subscribe(b)
+          Assert False(Observable.wait(s, TIMEOUT))
+          Assert Equals(b.results[1:], [
+                \ printf('n:%s', { 'stderr': ['Hello'] }),
+                \ printf('n:%s', { 'stderr': [' World'] }),
+                \ printf('n:%s', { 'stderr': ["\r", ''] }),
+                \ printf('n:%s', { 'stderr': ['Hello'] }),
+                \ printf('n:%s', { 'stderr': [' World'] }),
+                \ printf('n:%s', { 'stderr': ["\r", ''] }),
+                \ 'c',
+                \])
+        End
+      End
+    End
+
+    Context stdin option
+      It sends given data to the process through stdin list (string)
+        let b = BufferObserver()
+        let p = Process.new(Args('reply.py'), {
+              \ 'stdin': [
+              \   'Hello', ' World', "\n",
+              \   'Hello', ' World', "\n",
+              \   'This is not line',
+              \ ],
+              \})
+        let s = p.subscribe(b)
+        Assert False(Observable.wait(s, TIMEOUT))
+        Assert Equals(b.results[1:], [
+              \ printf('n:%s', { 'stdout': ['received: Hello World', ''] }),
+              \ printf('n:%s', { 'stdout': ['received: Hello World', ''] }),
+              \ printf('n:%s', { 'stdout': ['received: This is not line'] }),
+              \ 'c',
+              \])
+      End
+
+      It sends given data to the process through stdin list (string list)
+        let b = BufferObserver()
+        let p = Process.new(Args('reply.py'), {
+              \ 'stdin': [
+              \   ['Hello'],
+              \   [' World'],
+              \   ['', ''],
+              \   ['Hello'],
+              \   [' World'],
+              \   ['', ''],
+              \   ['This is not line'],
+              \ ],
+              \})
+        let s = p.subscribe(b)
+        Assert False(Observable.wait(s, TIMEOUT))
+        Assert Equals(b.results[1:], [
+              \ printf('n:%s', { 'stdout': ['received: Hello World', ''] }),
+              \ printf('n:%s', { 'stdout': ['received: Hello World', ''] }),
+              \ printf('n:%s', { 'stdout': ['received: This is not line'] }),
+              \ 'c',
+              \])
+      End
+
+      It sends given data to the process through stdin observable (string)
+        function! s:subscriber(observer) abort
+          call a:observer.next('Hello')
+          call a:observer.next(' World')
+          call a:observer.next("\n")
+          call a:observer.next('Hello')
+          call a:observer.next(' World')
+          call a:observer.next("\n")
+          call a:observer.next('This is not line')
+          call a:observer.complete()
+        endfunction
+
+        let b = BufferObserver()
+        let p = Process.new(Args('reply.py'), {
+              \ 'stdin': Observable.new(funcref('s:subscriber')),
+              \})
+        let s = p.subscribe(b)
+        Assert False(Observable.wait(s, TIMEOUT))
+        Assert Equals(b.results[1:], [
+              \ printf('n:%s', { 'stdout': ['received: Hello World', ''] }),
+              \ printf('n:%s', { 'stdout': ['received: Hello World', ''] }),
+              \ printf('n:%s', { 'stdout': ['received: This is not line'] }),
+              \ 'c',
+              \])
+      End
+
+      It sends given data to the process through stdin observable (string list)
+        function! s:subscriber(observer) abort
+          call a:observer.next(['Hello'])
+          call a:observer.next([' World'])
+          call a:observer.next(['', ''])
+          call a:observer.next(['Hello'])
+          call a:observer.next([' World'])
+          call a:observer.next(['', ''])
+          call a:observer.next(['This is not line'])
+          call a:observer.complete()
+        endfunction
+
+        let b = BufferObserver()
+        let p = Process.new(Args('reply.py'), {
+              \ 'stdin': Observable.new(funcref('s:subscriber')),
+              \})
+        let s = p.subscribe(b)
+        Assert False(Observable.wait(s, TIMEOUT))
+        Assert Equals(b.results[1:], [
+              \ printf('n:%s', { 'stdout': ['received: Hello World', ''] }),
+              \ printf('n:%s', { 'stdout': ['received: Hello World', ''] }),
+              \ printf('n:%s', { 'stdout': ['received: This is not line'] }),
+              \ 'c',
+              \])
+      End
+    End
+  End
+End
