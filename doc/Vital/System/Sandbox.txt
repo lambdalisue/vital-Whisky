@@ -1,0 +1,150 @@
+*Vital/System/Sandbox.txt*	Create a sandbox directory and move in
+
+Author : Alisue <lambdalisue@hashnote.net>
+License: MIT license
+Support: Vim 8.0.0000 and above
+Support: Neovim 0.2.0 and above
+
+
+=============================================================================
+CONTENTS				*Vital.System.Sandbox-content*
+
+INTRODUCTION				|Vital.System.Sandbox-introduction|
+FUNCTION				|Vital.System.Sandbox-function|
+INSTANCE				|Vital.System.Sandbox-instance|
+
+
+=============================================================================
+INTRODUCTION				*Vital.System.Sandbox-introduction*
+
+*Vital.System.Sandbox* is library to create and move into a temporary
+directory.
+
+
+=============================================================================
+FUNCTION				*Vital.System.Sandbox-function*
+
+.new([{factory}])			*Vital.System.Sandbox.new()*
+
+	Create a new sandbox instance, a home directory of the sandbox
+	instance, and change the current working directory to the home
+	directory of the sandbox.
+
+	If {factory} function is given, it determines the home directory of
+	the sandbox via calling the function. Otherwise it uses |tempname()|
+	function to determine the home directory.
+
+	Note that the home directory of the sandbox instance will be created
+	with the protection bits as 0700. So if you need to make the home
+	readable from others, create the home directory by yourself and give
+	a {factory} function which returns the created home directory.
+
+
+=============================================================================
+INSTANCE				*Vital.System.Sandbox-instance*
+
+.origin()			*Vital.System.Sandbox-instance.origin()*
+
+	Return an origin directory path of the sandbox.
+	The origin directory of the sandbox is a previous current working
+	directory prior to the creation of the sandbox.
+>
+	echo getcwd()
+	" /home/foobar
+
+	let s = Sandbox.new()
+
+	echo getcwd()
+	" /tmp/xxxx/xxxx/xxxx
+
+	echo s.origin()
+	" /home/foobar
+<
+
+.path([{path}])			*Vital.System.Sandbox-instance.path()*
+
+	Return an absolute path of a given {path} in the home directory of 
+	the sandbox.
+	It throws an exception when {path} is an absolute path.
+
+	Note that the path is normalized via |resolve()| function.
+>
+	let s = Sandbox.new()
+
+	echo getcwd()
+	" /tmp/xxxx/xxxx/xxxx
+
+	echo s.path()
+	" /tmp/xxxx/xxxx/xxxx
+
+	echo s.path('foo')
+	" /tmp/xxxx/xxxx/xxxx/foo
+
+	echo s.path('bar')
+	" /tmp/xxxx/xxxx/xxxx/bar
+<
+
+.visit({path})			*Vital.System.Sandbox-instance.visit()*
+
+	Create and change the current directory into a given {path} in the
+	home directory of the sandbox.
+
+	Note that the {path} directory will be created with the protection
+	bits as 0700. So if you need to make it readable from others, create
+	the directory by yourself prior to calling this method.
+>
+	let s = Sandbox.new()
+
+	echo getcwd()
+	" /tmp/xxxx/xxxx/xxxx
+
+	call s.visit('foo')
+	echo getcwd()
+	" /tmp/xxxx/xxxx/xxxx/foo
+
+	call s.visit('bar')
+	echo getcwd()
+	" /tmp/xxxx/xxxx/xxxx/bar
+<
+
+.return()			*Vital.System.Sandbox-instance.return()*
+
+	Change the current working directory to the home directory of the
+	sandbox.
+>
+	let s = Sandbox.new()
+
+	echo getcwd()
+	" /tmp/xxxx/xxxx/xxxx
+
+	call s.visit('foo')
+	echo getcwd()
+	" /tmp/xxxx/xxxx/xxxx/foo
+
+	call s.return()
+	echo getcwd()
+	" /tmp/xxxx/xxxx/xxxx
+<
+
+.dispose()			*Vital.System.Sandbox-instance.dispose()*
+
+	Change the current working directory to the origin directory of the
+	sandbox and remove any files/directories in the home directory of the
+	sandbox.
+>
+	echo getcwd()
+	" /home/foobar
+
+	let s = Sandbox.new()
+	call s.visit('foo')
+	call s.visit('bar')
+
+	call s.dispose()
+	echo getcwd()
+	" /home/foobar
+	echo isdirectory(s.path())
+	" 0
+<
+
+=============================================================================
+vim:tw=78:fo=tcq2mM:ts=8:ft=help:norl

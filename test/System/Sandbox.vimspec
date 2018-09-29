@@ -1,0 +1,98 @@
+Describe System.Sandbox
+  Before all
+    let Path = vital#vital#import('System.Filepath')
+    let assert = themis#helper('assert')
+    let saved_cwd = getcwd()
+
+    function! GetCwd() abort closure
+      return fnamemodify(resolve(getcwd()), ':p')
+    endfunction
+
+    function! PathEquals(a, b) abort closure
+      return assert.equals(
+            \ Path.remove_last_separator(a:a),
+            \ Path.remove_last_separator(a:b),
+            \)
+    endfunction
+  End
+
+  After all
+    execute 'cd' fnameescape(saved_cwd)
+  End
+
+  Before
+    let Sandbox = vital#vital#import('System.Sandbox')
+  End
+
+  Describe .new()
+    It returns a new Sandbox instance
+      let sandbox = Sandbox.new()
+      Assert KeyExists(sandbox, 'path')
+      Assert KeyExists(sandbox, 'visit')
+      Assert KeyExists(sandbox, 'return')
+      Assert KeyExists(sandbox, 'dispose')
+      Assert IsFunc(sandbox.path)
+      Assert IsFunc(sandbox.visit)
+      Assert IsFunc(sandbox.return)
+      Assert IsFunc(sandbox.dispose)
+    End
+  End
+
+  Describe Sandbox instance
+    Describe .origin()
+      It returns the origin directory of the sandbox which is a previous current working directory prior to the creation
+        let saved_cwd = GetCwd()
+        let sandbox = Sandbox.new()
+        Assert PathEquals(sandbox.origin(), saved_cwd)
+      End
+    End
+
+    Describe .path()
+      It returns the home directory of the sandbox which exists under a system temp directory
+        let sandbox = Sandbox.new()
+        let tempdir = fnamemodify(resolve(tempname()), ':p:h')
+        Assert True(isdirectory(sandbox.path()))
+        Assert PathEquals(sandbox.path()[:len(tempdir)], tempdir)
+      End
+    End
+
+    Describe .visit()
+      It creates a subdirectory and change current working directory
+        let sandbox = Sandbox.new()
+        call sandbox.visit('hello')
+        Assert PathEquals(GetCwd(), Path.join(sandbox.path(), 'hello'))
+      End
+
+      It change current working directory if the subdirectory exists
+        let sandbox = Sandbox.new()
+        call sandbox.visit('hello')
+        Assert PathEquals(GetCwd(), Path.join(sandbox.path(), 'hello'))
+        call sandbox.visit('world')
+        Assert PathEquals(GetCwd(), Path.join(sandbox.path(), 'world'))
+        call sandbox.visit('hello')
+        Assert PathEquals(GetCwd(), Path.join(sandbox.path(), 'hello'))
+      End
+    End
+
+    Describe .return()
+      It returns to the home directory of the sandbox
+        let sandbox = Sandbox.new()
+        call sandbox.visit('hello')
+        call sandbox.return()
+        Assert PathEquals(GetCwd(), sandbox.path())
+      End
+    End
+
+    Describe .dispose()
+      It returns to the original directory and remove the sandbox home directory
+        let saved_cwd = GetCwd()
+        let sandbox = Sandbox.new()
+        call sandbox.visit('hello')
+        call sandbox.visit('world')
+        call sandbox.dispose()
+        Assert PathEquals(GetCwd(), saved_cwd)
+        Assert False(isdirectory(sandbox.path()))
+      End
+    End
+  End
+End
