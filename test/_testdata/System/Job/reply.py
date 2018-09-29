@@ -40,35 +40,8 @@ if sys.platform.startswith('win'):
 if args.delay:
     time.sleep(args.delay / 1000.0)
 
-fo.write('Hello')
-fo.flush()
-if args.interval:
-    time.sleep(args.interval / 1000.0)
-
-fo.write(' World')
-fo.flush()
-if args.interval:
-    time.sleep(args.interval / 1000.0)
-
-fo.write(args.newline)
-fo.flush()
-if args.interval:
-    time.sleep(args.interval / 1000.0)
-
-fo.write('Hello')
-fo.flush()
-if args.interval:
-    time.sleep(args.interval / 1000.0)
-
-fo.write(' World')
-fo.flush()
-if args.interval:
-    time.sleep(args.interval / 1000.0)
-
-fo.write(args.newline)
-fo.flush()
-if args.interval:
-    time.sleep(args.interval / 1000.0)
-
-fo.write('This is not line')
-fo.flush()
+for m in sys.stdin:
+    fo.write('received: %s' % m.replace('\0', '<NUL>'))
+    fo.flush()
+    if args.interval:
+        time.sleep(args.interval / 1000.0)
