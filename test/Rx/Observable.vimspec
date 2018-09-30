@@ -65,10 +65,7 @@ Describe Rx.Observable
     End
 
     After
-      Assert Compare(
-            \ len(timer_info()), '<=', n_timers,
-            \ printf("Timer leak:\n%s", join(map(timer_info(), { -> string(v:val)[:80] }), "\n")),
-            \)
+      Assert Compare(len(timer_info()), '<=', n_timers, 'Timer leak?')
     End
 
     It emits sequential numbers on a given time-frame
@@ -93,10 +90,7 @@ Describe Rx.Observable
     End
 
     After
-      Assert Compare(
-            \ len(timer_info()), '<=', n_timers,
-            \ printf("Timer leak:\n%s", join(map(timer_info(), { -> string(v:val)[:80] }), "\n")),
-            \)
+      Assert Compare(len(timer_info()), '<=', n_timers, 'Timer leak?')
     End
 
     It emits 0 and complete after given duration
