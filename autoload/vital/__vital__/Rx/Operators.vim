@@ -333,6 +333,40 @@ function! s:_reduce_complete(ns, observer) abort
   call a:observer.complete()
 endfunction
 
+function! s:pluck(...) abort
+  if a:0 is# 0
+    throw 'vital: Rx.Operators.pluck: At least one property is required'
+  endif
+  let properties = copy(a:000)
+  return { s, ctor -> ctor(funcref('s:_pluck_subscriber', [properties, s])) }
+endfunction
+
+function! s:_pluck_subscriber(properties, source, observer) abort
+  if a:observer.closed()
+    return
+  endif
+  let ns = {
+        \ 'properties': a:properties,
+        \}
+  return a:source.subscribe({
+        \ 'next': funcref('s:_pluck_next', [ns, a:observer]),
+        \ 'error': { e -> a:observer.error(e) },
+        \ 'complete': { -> a:observer.complete() },
+        \})
+endfunction
+
+function! s:_pluck_next(ns, observer, value) abort
+  let value = a:value
+  for property in a:ns.properties
+    if type(value) isnot# v:t_dict || !has_key(value, property)
+      call a:observer.next(v:null)
+      return
+    endif
+    let value = value[property]
+  endfor
+  call a:observer.next(value)
+endfunction
+
 function! s:scan(fn, ...) abort
   let has_seed = a:0 isnot# 0
   let accumulate = a:0 ? a:1 : v:null

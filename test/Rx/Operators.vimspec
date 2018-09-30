@@ -618,6 +618,30 @@ Describe Rx.Operators
     End
   End
 
+  Describe .pluck()
+    It pluck object property
+      let o = Observable.of(
+            \ { 'name': 'Joe', 'age': 30 },
+            \ { 'name': 'Sarah', 'age': 35 },
+            \)
+            \.pipe(Operators.pluck('name'))
+      let rs = []
+      Assert False(Observable.wait(o.subscribe({ v -> add(rs, v) }), TIMEOUT))
+      Assert Equals(rs, ['Joe', 'Sarah'])
+    End
+
+    It pluck nested properties
+      let o = Observable.of(
+            \ { 'name': 'Joe', 'age': 30, 'job': { 'title': 'Developer', 'language': 'Vim script' } },
+            \ { 'name': 'Sarah', 'age': 35 },
+            \)
+            \.pipe(Operators.pluck('job', 'title'))
+      let rs = []
+      Assert False(Observable.wait(o.subscribe({ v -> add(rs, v) }), TIMEOUT))
+      Assert Equals(rs, ['Developer', v:null])
+    End
+  End
+
   Describe .reduce()
     It reduces each values via given function
       let o = Observable.of(1, 1, 2, 3, 5, 8)
