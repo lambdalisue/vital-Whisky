@@ -99,7 +99,7 @@ function! s:_filter_subscriber(fn, source, observer) abort
   endif
   let ns = {
         \ 'fn': a:fn,
-        \ 'index': 0,
+        \ 'index': -1,
         \}
   return a:source.subscribe({
         \ 'next': funcref('s:_filter_next', [ns, a:observer]),
@@ -109,9 +109,10 @@ function! s:_filter_subscriber(fn, source, observer) abort
 endfunction
 
 function! s:_filter_next(ns, observer, value) abort
+  let a:ns.index += 1
   try
-    if !a:ns.fn(a:value, a:ns.index)
-      return
+    if a:ns.fn(a:value, a:ns.index)
+      call a:observer.next(a:value)
     endif
   catch
     return a:observer.error({
@@ -119,8 +120,6 @@ function! s:_filter_next(ns, observer, value) abort
           \ 'throwpoint': v:throwpoint,
           \})
   endtry
-  call a:observer.next(a:value)
-  let a:ns.index += 1
 endfunction
 
 function! s:first(...) abort

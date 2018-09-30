@@ -322,6 +322,14 @@ Describe Rx.Operators
       Assert Equals(rs1, [2, 8])
       Assert Equals(rs2, [2, 8])
     End
+
+    It gives an item index as a second argument
+      let rs = []
+      let o = Observable.of(1, 1, 2, 3, 5, 8)
+            \.pipe(Operators.filter({ _, i -> empty(add(rs, i)) }))
+      Assert False(Observable.wait(o.subscribe({ -> 0 }), TIMEOUT))
+      Assert Equals(rs, [0, 1, 2, 3, 4, 5])
+    End
   End
 
   Describe .identity()
@@ -382,6 +390,14 @@ Describe Rx.Operators
       Assert False(Observable.wait(o.subscribe({ v -> add(rs2, v) }), TIMEOUT))
       Assert Equals(rs1, [2, 2, 4, 6, 10, 16])
       Assert Equals(rs2, [2, 2, 4, 6, 10, 16])
+    End
+
+    It gives an item index as a second argument
+      let rs = []
+      let o = Observable.of(1, 1, 2, 3, 5, 8)
+            \.pipe(Operators.map({ _, i -> empty(add(rs, i)) }))
+      Assert False(Observable.wait(o.subscribe({ -> 0 }), TIMEOUT))
+      Assert Equals(rs, [0, 1, 2, 3, 4, 5])
     End
   End
 
