@@ -17,6 +17,9 @@ parser.add_argument('--newline',
 parser.add_argument('--out',
                     choices=['stdout', 'stderr'],
                     default='stdout')
+parser.add_argument('--without-trailing-newline',
+                    action='store_true',
+                    default=False)
 args = parser.parse_args()
 
 fo = sys.stderr if args.out == 'stderr' else sys.stdout
@@ -40,35 +43,17 @@ if sys.platform.startswith('win'):
 if args.delay:
     time.sleep(args.delay / 1000.0)
 
-fo.write('Hello')
-fo.flush()
-if args.interval:
-    time.sleep(args.interval / 1000.0)
+chunks = [
+    'Hello',
+    ' World',
+    args.newline,
+    'Hello',
+    ' World',
+    '' if args.without_trailing_newline else args.newline,
+]
 
-fo.write(' World')
-fo.flush()
-if args.interval:
-    time.sleep(args.interval / 1000.0)
-
-fo.write(args.newline)
-fo.flush()
-if args.interval:
-    time.sleep(args.interval / 1000.0)
-
-fo.write('Hello')
-fo.flush()
-if args.interval:
-    time.sleep(args.interval / 1000.0)
-
-fo.write(' World')
-fo.flush()
-if args.interval:
-    time.sleep(args.interval / 1000.0)
-
-fo.write(args.newline)
-fo.flush()
-if args.interval:
-    time.sleep(args.interval / 1000.0)
-
-fo.write('This is not line')
-fo.flush()
+for chunk in chunks:
+    fo.write(chunk)
+    fo.flush()
+    if args.interval:
+        time.sleep(args.interval / 1000.0)

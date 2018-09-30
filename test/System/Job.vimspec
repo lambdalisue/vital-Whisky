@@ -1,8 +1,7 @@
-let s:is_windows = has('win32') || has('win64')
-
 Describe System.Job
   Before all
-    let TIMEOUT = s:is_windows ? 50000 : 5000
+    let TIMEOUT = (!empty($APPVEYOR) || !empty($TRAVIS)) ? 30000 : 5000
+
     let Path = vital#vital#import('System.Filepath')
     let Sandbox = vital#vital#import('System.Sandbox')
 
@@ -14,30 +13,19 @@ Describe System.Job
       return [p, s] + a:000
     endfunction
 
-    function! Lines(...) abort
-      return join(a:000, "\n")
-    endfunction
-
     function! OnStderr(data) abort dict
-      call map(a:data, 'v:val[-1:] ==# "\r" ? v:val[:-2] : v:val')
-      call filter(
-            \ map(a:data, 'substitute(v:val, ''^\s\+\|\s\+$'', '''', ''g'')'),
-            \ '!empty(v:val)',
-            \)
-      for line in a:data
-        call themis#log(line)
-      endfor
+      call map(a:data, { -> v:val[-1:] ==# "\r" ? v:val[:-2] : v:val })
+      call map(a:data, { -> substitute(v:val, ''^\s\+\|\s\+$'', '''', ''g'') })
+      call map(filter(a:data, { -> !empty(v:val)}), { -> themis#log(v:val) })
     endfunction
 
-    function! OnReceive(data) abort dict
-      let self._received[-1] .= a:data[0]
-      call extend(self._received, a:data[1:])
-    endfunction
-
-    function! OnReceiveText(data) abort dict
-      call map(a:data, 'v:val[-1:] ==# "\r" ? v:val[:-2] : v:val')
-      let self._received[-1] .= a:data[0]
-      call extend(self._received, a:data[1:])
+    function! OnReceiveText(buffer, data) abort
+      if empty(a:buffer)
+        call add(a:buffer, '')
+      endif
+      call map(a:data, { -> v:val[-1:] ==# "\r" ? v:val[:-2] : v:val })
+      let a:buffer[-1] .= a:data[0]
+      call extend(a:buffer, a:data[1:])
     endfunction
   End
 
@@ -78,10 +66,6 @@ Describe System.Job
       Context cwd option
         Before
           let sandbox = Sandbox.new()
-          let options = extend(options, {
-                \ '_received': [''],
-                \ 'on_stdout': funcref('OnReceiveText'),
-                \})
         End
 
         After
@@ -91,19 +75,24 @@ Describe System.Job
         It starts a job in a current working directory
           call sandbox.visit('foo')
           call sandbox.visit('bar')
-          let job = Job.start(Args('cwd.py'), options)
+          let rs = []
+          let job = Job.start(Args('cwd.py'), extend(options, {
+                \ 'on_stdout': funcref('OnReceiveText', [rs]),
+                \}))
           Assert Equals(job.wait(TIMEOUT), 0)
-          Assert Equals(job._received, [sandbox.path('bar'), ''])
+          Assert Equals(rs, [sandbox.path('bar'), ''])
         End
 
         It starts a job in a given cwd
           call sandbox.visit('foo')
           call sandbox.visit('bar')
+          let rs = []
           let job = Job.start(Args('cwd.py'), extend(options, {
                 \ 'cwd': sandbox.path('foo'),
+                \ 'on_stdout': funcref('OnReceiveText', [rs]),
                 \}))
           Assert Equals(job.wait(TIMEOUT), 0)
-          Assert Equals(job._received, [sandbox.path('foo'), ''])
+          Assert Equals(rs, [sandbox.path('foo'), ''])
         End
       End
     endif
@@ -111,104 +100,265 @@ Describe System.Job
 
   Describe Callbacks
     Describe .on_stdout() callback
-      Before
-        let options = extend(options, {
-              \ '_received': [''],
-              \ 'on_stdout': funcref('OnReceive'),
-              \})
+      It is called as a dictionary function of the job instance
+        function! OnStdout(data) abort dict
+          call add(self.results, a:data)
+        endfunction
+
+        let job = Job.start(Args('echo.py', '--out', 'stdout'), extend(options, {
+              \ 'results': [],
+              \ 'on_stdout': funcref('OnStdout'),
+              \}))
+        Assert Equals(job.wait(TIMEOUT), 0)
+        Assert Equals(job.results, [
+              \ ['Hello'],
+              \ [' World'],
+              \ ['', ''],
+              \ ['Hello'],
+              \ [' World'],
+              \ ['', ''],
+              \])
       End
 
       It is called with raw {data} (CR)
-        let job = Job.start(Args('echo.py', '--newline', "\r", '--out', 'stdout'), options)
+        let rs = []
+        let job = Job.start(Args('echo.py', '--newline', "\r", '--out', 'stdout'), extend(options, {
+              \ 'on_stdout': { v -> add(rs, v) },
+              \}))
         Assert Equals(job.wait(TIMEOUT), 0)
-        Assert Equals(job._received, [
-              \ "Hello World\rHello World\rThis is not line",
+        Assert Equals(rs, [
+              \ ['Hello'],
+              \ [' World'],
+              \ ["\r"],
+              \ ['Hello'],
+              \ [' World'],
+              \ ["\r"],
               \])
       End
 
       It is called with raw {data} (LF)
-        let job = Job.start(Args('echo.py', '--newline', "\n", '--out', 'stdout'), options)
+        let rs = []
+        let job = Job.start(Args('echo.py', '--newline', "\n", '--out', 'stdout'), extend(options, {
+              \ 'on_stdout': { v -> add(rs, v) },
+              \}))
         Assert Equals(job.wait(TIMEOUT), 0)
-        Assert Equals(job._received, [
-              \ 'Hello World',
-              \ 'Hello World',
-              \ 'This is not line',
+        Assert Equals(rs, [
+              \ ['Hello'],
+              \ [' World'],
+              \ ['', ''],
+              \ ['Hello'],
+              \ [' World'],
+              \ ['', ''],
               \])
       End
 
       It is called with raw {data} (CRLF)
-        let job = Job.start(Args('echo.py', '--newline', "\r\n", '--out', 'stdout'), options)
+        let rs = []
+        let job = Job.start(Args('echo.py', '--newline', "\r\n", '--out', 'stdout'), extend(options, {
+              \ 'on_stdout': { v -> add(rs, v) },
+              \}))
         Assert Equals(job.wait(TIMEOUT), 0)
-        Assert Equals(job._received, [
-              \ "Hello World\r",
-              \ "Hello World\r",
-              \ 'This is not line',
+        Assert Equals(rs, [
+              \ ['Hello'],
+              \ [' World'],
+              \ ["\r", ''],
+              \ ['Hello'],
+              \ [' World'],
+              \ ["\r", ''],
+              \])
+      End
+
+      It is called with raw {data} without trailing newline (invalid POSIX text) (CR)
+        let rs = []
+        let job = Job.start(Args('echo.py', '--newline', "\r", '--out', 'stdout', '--without-trailing-newline'), extend(options, {
+              \ 'on_stdout': { v -> add(rs, v) },
+              \}))
+        Assert Equals(job.wait(TIMEOUT), 0)
+        Assert Equals(rs, [
+              \ ['Hello'],
+              \ [' World'],
+              \ ["\r"],
+              \ ['Hello'],
+              \ [' World'],
+              \])
+      End
+
+      It is called with raw {data} without trailing newline (invalid POSIX text) (LF)
+        let rs = []
+        let job = Job.start(Args('echo.py', '--newline', "\n", '--out', 'stdout', '--without-trailing-newline'), extend(options, {
+              \ 'on_stdout': { v -> add(rs, v) },
+              \}))
+        Assert Equals(job.wait(TIMEOUT), 0)
+        Assert Equals(rs, [
+              \ ['Hello'],
+              \ [' World'],
+              \ ['', ''],
+              \ ['Hello'],
+              \ [' World'],
+              \])
+      End
+
+      It is called with raw {data} without trailing newline (invalid POSIX text) (CRLF)
+        let rs = []
+        let job = Job.start(Args('echo.py', '--newline', "\r\n", '--out', 'stdout', '--without-trailing-newline'), extend(options, {
+              \ 'on_stdout': { v -> add(rs, v) },
+              \}))
+        Assert Equals(job.wait(TIMEOUT), 0)
+        Assert Equals(rs, [
+              \ ['Hello'],
+              \ [' World'],
+              \ ["\r", ''],
+              \ ['Hello'],
+              \ [' World'],
               \])
       End
     End
 
     Describe .on_stderr() callback
-      Before
-        let options = extend(options, {
-              \ '_received': [''],
-              \ 'on_stderr': funcref('OnReceive'),
-              \})
+      It is called as a dictionary function of the job instance
+        function! OnStdout(data) abort dict
+          call add(self.results, a:data)
+        endfunction
+
+        let job = Job.start(Args('echo.py', '--out', 'stderr'), extend(options, {
+              \ 'results': [],
+              \ 'on_stderr': funcref('OnStdout'),
+              \}))
+        Assert Equals(job.wait(TIMEOUT), 0)
+        Assert Equals(job.results, [
+              \ ['Hello'],
+              \ [' World'],
+              \ ['', ''],
+              \ ['Hello'],
+              \ [' World'],
+              \ ['', ''],
+              \])
       End
 
       It is called with raw {data} (CR)
-        let job = Job.start(Args('echo.py', '--newline', "\r", '--out', 'stderr'), options)
+        let rs = []
+        let job = Job.start(Args('echo.py', '--newline', "\r", '--out', 'stderr'), extend(options, {
+              \ 'on_stderr': { v -> add(rs, v) },
+              \}))
         Assert Equals(job.wait(TIMEOUT), 0)
-        Assert Equals(job._received, [
-              \ "Hello World\rHello World\rThis is not line",
+        Assert Equals(rs, [
+              \ ['Hello'],
+              \ [' World'],
+              \ ["\r"],
+              \ ['Hello'],
+              \ [' World'],
+              \ ["\r"],
               \])
       End
 
       It is called with raw {data} (LF)
-        let job = Job.start(Args('echo.py', '--newline', "\n", '--out', 'stderr'), options)
+        let rs = []
+        let job = Job.start(Args('echo.py', '--newline', "\n", '--out', 'stderr'), extend(options, {
+              \ 'on_stderr': { v -> add(rs, v) },
+              \}))
         Assert Equals(job.wait(TIMEOUT), 0)
-        Assert Equals(job._received, [
-              \ 'Hello World',
-              \ 'Hello World',
-              \ 'This is not line',
+        Assert Equals(rs, [
+              \ ['Hello'],
+              \ [' World'],
+              \ ['', ''],
+              \ ['Hello'],
+              \ [' World'],
+              \ ['', ''],
               \])
       End
 
       It is called with raw {data} (CRLF)
-        let job = Job.start(Args('echo.py', '--newline', "\r\n", '--out', 'stderr'), options)
+        let rs = []
+        let job = Job.start(Args('echo.py', '--newline', "\r\n", '--out', 'stderr'), extend(options, {
+              \ 'on_stderr': { v -> add(rs, v) },
+              \}))
         Assert Equals(job.wait(TIMEOUT), 0)
-        Assert Equals(job._received, [
-              \ "Hello World\r",
-              \ "Hello World\r",
-              \ 'This is not line',
+        Assert Equals(rs, [
+              \ ['Hello'],
+              \ [' World'],
+              \ ["\r", ''],
+              \ ['Hello'],
+              \ [' World'],
+              \ ["\r", ''],
+              \])
+      End
+
+      It is called with raw {data} without trailing newline (invalid POSIX text) (CR)
+        let rs = []
+        let job = Job.start(Args('echo.py', '--newline', "\r", '--out', 'stderr', '--without-trailing-newline'), extend(options, {
+              \ 'on_stderr': { v -> add(rs, v) },
+              \}))
+        Assert Equals(job.wait(TIMEOUT), 0)
+        Assert Equals(rs, [
+              \ ['Hello'],
+              \ [' World'],
+              \ ["\r"],
+              \ ['Hello'],
+              \ [' World'],
+              \])
+      End
+
+      It is called with raw {data} without trailing newline (invalid POSIX text) (LF)
+        let rs = []
+        let job = Job.start(Args('echo.py', '--newline', "\n", '--out', 'stderr', '--without-trailing-newline'), extend(options, {
+              \ 'on_stderr': { v -> add(rs, v) },
+              \}))
+        Assert Equals(job.wait(TIMEOUT), 0)
+        Assert Equals(rs, [
+              \ ['Hello'],
+              \ [' World'],
+              \ ['', ''],
+              \ ['Hello'],
+              \ [' World'],
+              \])
+      End
+
+      It is called with raw {data} without trailing newline (invalid POSIX text) (CRLF)
+        let rs = []
+        let job = Job.start(Args('echo.py', '--newline', "\r\n", '--out', 'stderr', '--without-trailing-newline'), extend(options, {
+              \ 'on_stderr': { v -> add(rs, v) },
+              \}))
+        Assert Equals(job.wait(TIMEOUT), 0)
+        Assert Equals(rs, [
+              \ ['Hello'],
+              \ [' World'],
+              \ ["\r", ''],
+              \ ['Hello'],
+              \ [' World'],
               \])
       End
     End
 
     Describe .on_exit() callback
-      Before
-        function! s:on_exit(exitval) abort dict
-          call add(self._exitval, a:exitval)
+      It is called as a dictionary function of the job instance
+        function! OnExit(exitval) abort dict
+          call add(self.results, a:exitval)
         endfunction
 
-        let options = extend(options, {
-              \ '_exitval': [],
-              \ 'on_exit': funcref('s:on_exit'),
-              \})
+        let job = Job.start(Args('exit.py', '--exitval', '0'), extend(options, {
+              \ 'results': [],
+              \ 'on_exit': funcref('OnExit'),
+              \}))
+        Assert Equals(job.wait(TIMEOUT), 0)
+        Assert Equals(job.results, [0])
       End
 
       It is called with an exitval
+        let rs = []
         let path = Path.join(root, 'exitval.py')
-        let job = Job.start(Args('exit.py', '--exitval', '0'), options)
+        let job = Job.start(Args('exit.py', '--exitval', '0'), extend(options, {
+              \ 'on_exit': { v -> add(rs, v) },
+              \}))
         Assert Equals(job.wait(TIMEOUT), 0)
-        Assert Equals(job._exitval, [0])
+        Assert Equals(rs, [0])
 
         let job = Job.start(Args('exit.py', '--exitval', '1'), options)
         Assert Equals(job.wait(TIMEOUT), 1)
-        Assert Equals(job._exitval, [0, 1])
+        Assert Equals(rs, [0, 1])
 
         let job = Job.start(Args('exit.py', '--exitval', '2'), options)
         Assert Equals(job.wait(TIMEOUT), 2)
-        Assert Equals(job._exitval, [0, 1, 2])
+        Assert Equals(rs, [0, 1, 2])
       End
     End
   End
@@ -245,30 +395,29 @@ Describe System.Job
     End
 
     Describe .send()
-      Before
-        let options = extend(options, {
-              \ '_received': [''],
-              \ 'on_stdout': funcref('OnReceiveText'),
-              \})
-      End
-
       It sends {data} (String) to a job
-        let job = Job.start(Args('reply.py'), options)
+        let rs = []
+        let job = Job.start(Args('reply.py'), extend(options, {
+              \ 'on_stdout': funcref('OnReceiveText', [rs]),
+              \}))
         call job.send('Hello')
         call job.send(" World\n")
         call job.close()
         Assert Equals(job.wait(TIMEOUT), 0)
-        Assert Equals(job._received, ['received: Hello World', ''])
+        Assert Equals(rs, ['received: Hello World', ''])
       End
 
       It sends {data} (List) to the job
-        let job = Job.start(Args('reply.py'), options)
+        let rs = []
+        let job = Job.start(Args('reply.py'), extend(options, {
+              \ 'on_stdout': funcref('OnReceiveText', [rs]),
+              \}))
         call job.send(['abc', "123\n456", ''])
         call job.send(['.', ''])
         call job.close()
         Assert Equals(job.wait(TIMEOUT), 0)
         if has('nvim')
-          Assert Equals(job._received, [
+          Assert Equals(rs, [
                 \ 'received: abc',
                 \ 'received: 123<NUL>456',
                 \ 'received: .',
@@ -276,7 +425,7 @@ Describe System.Job
                 \])
         else
           " Vim cannot send \0
-          Assert Equals(job._received, [
+          Assert Equals(rs, [
                 \ 'received: abc',
                 \ 'received: 123456',
                 \ 'received: .',
@@ -287,23 +436,19 @@ Describe System.Job
     End
 
     Describe .close()
-      Before
-        let options = extend(options, {
-              \ '_received': [''],
-              \ 'on_stdout': funcref('OnReceiveText'),
-              \})
-      End
-
-      It sends EOF (close stdin) to a job
-        let job = Job.start(Args('reply.py', '--interval', '0'), options)
+      It sends EOF (close stdin) to a job [time-consuming]
+        let rs = []
+        let job = Job.start(Args('reply.py', '--interval', '0'), extend(options, {
+              \ 'on_stdout': funcref('OnReceiveText', [rs]),
+              \}))
         call job.send("Hello\n")
         call job.send("Darkness\n")
         call job.send("My\n")
         call job.send("Old\n")
         call job.send("Friend\n")
         " EOF has not been sent so the following should be timeout
-        Assert Equals(job.wait(500), -1)
-        Assert Equals(job._received, [
+        Assert Equals(job.wait(TIMEOUT), -1)
+        Assert Equals(rs, [
               \ 'received: Hello',
               \ 'received: Darkness',
               \ 'received: My',
@@ -371,9 +516,9 @@ Describe System.Job
         Assert Equals(job.wait(TIMEOUT), 2)
       End
 
-      It returns -1 when a job did not terminate within {timeout}
+      It returns -1 when a job did not terminate within {timeout} [time-consuming]
         let job = Job.start(Args('never.py'), options)
-        Assert Equals(job.wait(100), -1)
+        Assert Equals(job.wait(TIMEOUT), -1)
         Assert Equals(job.status(), 'run')
         call job.stop()
         call job.wait(TIMEOUT)
