@@ -1,0 +1,218 @@
+Describe Rx.ReplaySubject
+  Before all
+    let BufferObserver = vital#vital#import('Rx.Test.BufferObserver')
+  End
+
+  Before
+    let Observable = healthcheck#vital#import('Rx.Observable')
+    let ReplaySubject = healthcheck#vital#import('Rx.ReplaySubject')
+  End
+
+  Describe .new()
+    It returns a replay j (observable/b)
+      let j = ReplaySubject.new()
+      Assert True(Observable.is_observable(j))
+    End
+  End
+
+  Describe ReplaySubject instance
+    It should add the b before running s code
+      function! s:next(ns, value) abort
+        call add(a:ns.results, a:value)
+        if a:value < 3
+          call a:ns.observer.next(a:value + 1)
+        endif
+      endfunction
+
+      let j = ReplaySubject.new()
+      let ns = {
+            \ 'results': [],
+            \ 'observer': j,
+            \}
+      call j.next(1)
+      call j.subscribe(funcref('s:next', [ns]))
+      Assert Equals(ns.results, [1, 2, 3])
+    End
+
+    It should replay values upon s
+      let j = ReplaySubject.new()
+      let b = BufferObserver.new()
+      let results = []
+      call j.next(1)
+      call j.next(2)
+      call j.next(3)
+      call j.subscribe(b)
+      Assert Equals(b.results, ['n:1', 'n:2', 'n:3'])
+    End
+
+    It should replay values and complete
+      let j = ReplaySubject.new()
+      let b = BufferObserver.new()
+      let results = []
+      call j.next(1)
+      call j.next(2)
+      call j.next(3)
+      call j.complete()
+      call j.subscribe(b)
+      Assert Equals(b.results, [
+            \ 'n:1',
+            \ 'n:2',
+            \ 'n:3',
+            \ 'c',
+            \])
+    End
+
+    It should replay values and error
+      let j = ReplaySubject.new()
+      let b = BufferObserver.new()
+      let results = []
+      call j.next(1)
+      call j.next(2)
+      call j.next(3)
+      call j.error('hello')
+      call j.subscribe(b)
+      Assert Equals(b.results, [
+            \ 'n:1',
+            \ 'n:2',
+            \ 'n:3',
+            \ 'e:hello',
+            \])
+    End
+
+    It should only replay values within its buffer size
+      let j = ReplaySubject.new(2)
+      let b = BufferObserver.new()
+      let results = []
+      call j.next(1)
+      call j.next(2)
+      call j.next(3)
+      call j.subscribe(b)
+      Assert Equals(b.results, [
+            \ 'n:2',
+            \ 'n:3',
+            \])
+    End
+
+    It replays event stream to children bs
+      let b1 = BufferObserver.new()
+      let b2 = BufferObserver.new()
+      let j = ReplaySubject.new()
+      call j.subscribe(b1)
+      call j.next(0)
+      call j.next(1)
+      call j.next(2)
+      call j.next(3)
+      call j.subscribe(b2)
+      call j.next(4)
+      call j.complete()
+
+      Assert Equals(b1.results, [
+            \ 'n:0',
+            \ 'n:1',
+            \ 'n:2',
+            \ 'n:3',
+            \ 'n:4',
+            \ 'c',
+            \])
+      Assert Equals(b2.results, [
+            \ 'n:0',
+            \ 'n:1',
+            \ 'n:2',
+            \ 'n:3',
+            \ 'n:4',
+            \ 'c',
+            \])
+    End
+
+    It replays event stream to children bs (completed)
+      let b1 = BufferObserver.new()
+      let b2 = BufferObserver.new()
+      let j = ReplaySubject.new()
+      call j.subscribe(b1)
+      call j.next(0)
+      call j.next(1)
+      call j.next(2)
+      call j.next(3)
+      call j.next(4)
+      call j.complete()
+      call j.subscribe(b2)
+
+      Assert Equals(b1.results, [
+            \ 'n:0',
+            \ 'n:1',
+            \ 'n:2',
+            \ 'n:3',
+            \ 'n:4',
+            \ 'c',
+            \])
+      Assert Equals(b2.results, [
+            \ 'n:0',
+            \ 'n:1',
+            \ 'n:2',
+            \ 'n:3',
+            \ 'n:4',
+            \ 'c',
+            \])
+    End
+
+    It replays event stream to children bs (buffer_size)
+      let b1 = BufferObserver.new()
+      let b2 = BufferObserver.new()
+      let j = ReplaySubject.new(2)
+      call j.subscribe(b1)
+      call j.next(0)
+      call j.next(1)
+      call j.next(2)
+      call j.next(3)
+      call j.subscribe(b2)
+      call j.next(4)
+      call j.complete()
+
+      Assert Equals(b1.results, [
+            \ 'n:0',
+            \ 'n:1',
+            \ 'n:2',
+            \ 'n:3',
+            \ 'n:4',
+            \ 'c',
+            \])
+      Assert Equals(b2.results, [
+            \ 'n:2',
+            \ 'n:3',
+            \ 'n:4',
+            \ 'c',
+            \])
+    End
+
+    It replays event stream to children bs (window_size)
+      let b1 = BufferObserver.new()
+      let b2 = BufferObserver.new()
+      let j = ReplaySubject.new(v:null, 100)
+      call j.subscribe(b1)
+      call timer_start(0, { -> j.next(0) })
+      call timer_start(100, { -> j.next(1) })
+      call timer_start(200, { -> j.next(2) })
+      call timer_start(300, { -> j.next(3) })
+      call timer_start(350, { -> j.subscribe(b2) })
+      call timer_start(400, { -> j.next(4) })
+      call timer_start(450, { -> j.complete() })
+      call timer_start(500, { -> j.unsubscribe() })
+
+      Assert Equals(Observable.wait(j, 1000), 0)
+      Assert Equals(b1.results, [
+            \ 'n:0',
+            \ 'n:1',
+            \ 'n:2',
+            \ 'n:3',
+            \ 'n:4',
+            \ 'c',
+            \])
+      Assert Equals(b2.results, [
+            \ 'n:3',
+            \ 'n:4',
+            \ 'c',
+            \])
+    End
+  End
+End
+

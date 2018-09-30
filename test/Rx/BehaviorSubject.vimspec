@@ -1,0 +1,102 @@
+Describe Rx.BehaviorSubject
+  Before all
+    let BufferObserver = vital#vital#import('Rx.Test.BufferObserver')
+  End
+
+  Before
+    let Observable = healthcheck#vital#import('Rx.Observable')
+    let BehaviorSubject = healthcheck#vital#import('Rx.BehaviorSubject')
+  End
+
+  Describe .new()
+    It returns a behavior j (observable/b)
+      let j = BehaviorSubject.new()
+      Assert True(Observable.is_observable(j))
+    End
+  End
+
+  Describe behavior j instance
+    It should start with an initialization value
+      let j = BehaviorSubject.new('foo')
+      let b = BufferObserver.new()
+      call j.subscribe(b)
+      call j.next('bar')
+      call j.complete()
+      Assert Equals(b.results, ['n:foo', 'n:bar', 'c'])
+    End
+
+    It should pump values to muptiple subscribers
+      let j = BehaviorSubject.new('init')
+      let b1 = BufferObserver.new()
+      let b2 = BufferObserver.new()
+      call j.subscribe(b1)
+      call j.subscribe(b2)
+      Assert Equals(len(j.observers), 2)
+
+      call j.next('foo')
+      call j.next('bar')
+      call j.complete()
+      Assert Equals(b1.results, ['n:init', 'n:foo', 'n:bar', 'c'])
+      Assert Equals(b2.results, ['n:init', 'n:foo', 'n:bar', 'c'])
+    End
+
+    It should not pass values nexted after a complete
+      let j = BehaviorSubject.new('init')
+      let b = BufferObserver.new()
+      call j.subscribe(b)
+      Assert Equals(b.results, ['n:init'])
+
+      call j.next('foo')
+      Assert Equals(b.results, ['n:init', 'n:foo'])
+
+      call j.complete()
+      Assert Equals(b.results, ['n:init', 'n:foo', 'c'])
+
+      call j.next('bar')
+      Assert Equals(b.results, ['n:init', 'n:foo', 'c'])
+    End
+
+    It should clean out unsubscribed subscribers
+      let j = BehaviorSubject.new('init')
+      let b1 = BufferObserver.new()
+      let b2 = BufferObserver.new()
+      let s1 = j.subscribe(b1)
+      let s2 = j.subscribe(b2)
+      Assert Equals(len(j.observers), 2)
+      call s1.unsubscribe()
+      Assert Equals(len(j.observers), 1)
+      call s2.unsubscribe()
+      Assert Equals(len(j.observers), 0)
+      Assert Equals(b1.results, ['n:init'])
+      Assert Equals(b1.results, ['n:init'])
+    End
+
+    It should replay the previous value when subscribed
+      let j = BehaviorSubject.new(0)
+      let b = BufferObserver.new()
+      call j.next(1)
+      call j.next(2)
+      call j.next(3)
+      call j.subscribe(b)
+      call j.next(4)
+      call j.next(5)
+      call j.complete()
+      Assert Equals(b.results, ['n:3', 'n:4', 'n:5', 'c'])
+    End
+
+    It should emit complete when subscribed after completed
+      let j = BehaviorSubject.new(0)
+      let b = BufferObserver.new()
+      call j.next(1)
+      call j.next(2)
+      call j.next(3)
+      call j.next(4)
+      call j.next(5)
+      call j.complete()
+      call j.subscribe(b)
+      Assert Equals(b.results, ['c'])
+    End
+  End
+End
+
+

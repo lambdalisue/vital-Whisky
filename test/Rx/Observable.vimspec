@@ -1,0 +1,352 @@
+Describe Rx.Observable
+  Before all
+    let BufferObserver = vital#vital#import('Rx.Test.BufferObserver')
+  End
+
+  Before
+    let Observable = healthcheck#vital#import('Rx.Observable')
+    let Subject = healthcheck#vital#import('Rx.Subject')
+  End
+
+  Describe .empty()
+    It emits complete immediately
+      let b = BufferObserver.new()
+      let o = Observable.empty()
+      Assert True(Observable.is_observable(o))
+      Assert False(Observable.wait(o.subscribe(b), 0))
+      Assert Equals(b.results, ['c'])
+    End
+  End
+
+  Describe .never()
+    It never emits any events
+      let b = BufferObserver.new()
+      let o = Observable.never()
+      Assert True(Observable.is_observable(o))
+      Assert True(Observable.wait(o.subscribe(b), 50))
+      Assert Equals(b.results, [])
+    End
+  End
+
+  Describe .range()
+    It emits numbers in a given range sequentially
+      let b = BufferObserver.new()
+      let o = Observable.range(3, 3)
+      Assert False(Observable.wait(o.subscribe(b), 50))
+      Assert Equals(b.results, ['n:3', 'n:4', 'n:5', 'c'])
+    End
+  End
+
+  Describe .scalar()
+    It emits a given value then complete immediately
+      let b = BufferObserver.new()
+      let o = Observable.scalar('hello')
+      Assert True(Observable.is_observable(o))
+      Assert False(Observable.wait(o.subscribe(b), 0))
+      Assert Equals(b.results, ['n:hello', 'c'])
+    End
+  End
+
+  Describe .throw_error()
+    It emits a given error immediately
+      let b = BufferObserver.new()
+      let o = Observable.throw_error('hello')
+      Assert True(Observable.is_observable(o))
+      Assert False(Observable.wait(o.subscribe(b), 0))
+      Assert Equals(b.results, ['e:hello'])
+    End
+  End
+
+  Describe .interval() [time-consuming]
+    Before
+      let n_timers = len(timer_info())
+    End
+
+    After
+      Assert Compare(n_timers, '<=', len(timer_info()), 'Timer seems leaking?')
+    End
+
+    It emits sequential numbers on a given time-frame
+      if !empty($APPVEYOR) || !empty($TRAVIS)
+        let ts = [100, 500]
+      else
+        let ts = [10, 50]
+      endif
+      let b = BufferObserver.new()
+      let o = Observable.interval(ts[0])
+      Assert True(Observable.is_observable(o))
+      let s = o.subscribe(b)
+      Assert True(Observable.wait(s, { 'interval': 1, 'timeout': ts[1] }))
+      Assert Equals(b.results[:4], ['n:0', 'n:1', 'n:2', 'n:3', 'n:4'])
+      call s.unsubscribe()
+    End
+  End
+
+  Describe .timer() [time-consuming]
+    Before
+      let n_timers = len(timer_info())
+    End
+
+    After
+      Assert Compare(n_timers, '<=', len(timer_info()), 'Timer seems leaking?')
+    End
+
+    It emits 0 and complete after given duration
+      if !empty($APPVEYOR) || !empty($TRAVIS)
+        let ts = [100, 500]
+      else
+        let ts = [10, 50]
+      endif
+      let b = BufferObserver.new()
+      let o = Observable.timer(ts[0])
+      Assert True(Observable.is_observable(o))
+      let s = o.subscribe(b)
+      Assert False(Observable.wait(s, { 'interval': 1, 'timeout': ts[1] }))
+      Assert Equals(b.results, ['n:0', 'c'])
+    End
+
+    It emits sequential numbers on a given time-frame after given duration
+      if !empty($APPVEYOR) || !empty($TRAVIS)
+        let ts = [500, 100, 500, 510]
+      else
+        let ts = [50, 10, 50, 51]
+      endif
+      let o = Observable.timer(ts[0], ts[1])
+      let b = BufferObserver.new()
+      let s = o.subscribe(b)
+      Assert True(Observable.wait(s, { 'interval': 1, 'timeout': ts[2] }))
+      Assert Equals(b.results, ['n:0'])
+      Assert True(Observable.wait(s, { 'interval': 1, 'timeout': ts[3] }))
+      Assert Equals(b.results[:4], ['n:0', 'n:1', 'n:2', 'n:3', 'n:4'])
+      call s.unsubscribe()
+    End
+  End
+
+  Describe .combine_latest()
+    It concatenates emissions from multiple observers sequentially
+      let j1 = Subject.new()
+      let j2 = Subject.new()
+      let j3 = Subject.new()
+      let b = BufferObserver.new()
+      let o = Observable.combine_latest(j1, j2, j3, { v -> join(v, '') })
+      Assert True(Observable.is_observable(o))
+
+      " j1: ---a--b--c--|
+      " j2: ------d----e----f--------|
+      " j3: --------h----i----j---------
+      " o:  --------**-*-*--*-*---------
+      let s = o.subscribe(b)
+      call j1.next('a')
+      call j1.next('b')
+      call j2.next('d')
+      call j3.next('h')
+      call j1.next('c')
+      call j2.next('e')
+      call j1.complete()
+      call j3.next('i')
+      call j2.next('f')
+      call j3.next('j')
+      call j2.complete()
+      Assert Equals(b.results, [
+            \ 'n:bdh', 'n:cdh', 'n:ceh', 'n:cei', 'n:cfi', 'n:cfj'
+            \])
+    End
+  End
+
+  Describe .concat()
+    It concatenates emissions from multiple observers sequentially
+      let j1 = Subject.new()
+      let j2 = Subject.new()
+      let j3 = Subject.new()
+      let b = BufferObserver.new()
+      let o = Observable.concat(j1, j2, j3)
+      Assert True(Observable.is_observable(o))
+
+      " j1: ---a--b--c--|
+      " j2: ------d----e----f--------|
+      " j3: --------h----i----j---------
+      " o:  ---*--*--*------*-----------
+      let s = o.subscribe(b)
+      call j1.next('a')
+      call j1.next('b')
+      call j2.next('d')
+      call j3.next('h')
+      call j1.next('c')
+      call j2.next('e')
+      call j1.complete()
+      call j3.next('i')
+      call j2.next('f')
+      call j3.next('j')
+      call j2.complete()
+      Assert Equals(b.results, [
+            \ 'n:a', 'n:b', 'n:c', 'n:f',
+            \])
+    End
+  End
+
+  Describe .merge()
+    It combine emissions from multiple observers
+      let j1 = Subject.new()
+      let j2 = Subject.new()
+      let j3 = Subject.new()
+      let b = BufferObserver.new()
+      let o = Observable.merge(j1, j2, j3)
+      Assert True(Observable.is_observable(o))
+
+      " j1: ---a--b--c--|
+      " j2: ------d----e----f--------|
+      " j3: --------h----i----j---------
+      " o:  ---*--*-**-*-*--*-*---------
+      let s = o.subscribe(b)
+      call j1.next('a')
+      call j1.next('b')
+      call j2.next('d')
+      call j3.next('h')
+      call j1.next('c')
+      call j2.next('e')
+      call j1.complete()
+      call j3.next('i')
+      call j2.next('f')
+      call j3.next('j')
+      call j2.complete()
+      Assert Equals(b.results, [
+            \ 'n:a', 'n:b', 'n:d', 'n:h',
+            \ 'n:c', 'n:e', 'n:i', 'n:f',
+            \ 'n:j',
+            \])
+    End
+  End
+
+  Describe .race()
+    It select an observable which emits first
+      let j1 = Subject.new()
+      let j2 = Subject.new()
+      let j3 = Subject.new()
+      let b = BufferObserver.new()
+      let o = Observable.race(j1, j2, j3)
+      Assert True(Observable.is_observable(o))
+
+      " j1: ---a--b--c--|
+      " j2: ------d----e----f--------|
+      " j3: --------h----i----j---------
+      " o:  ---*--*--*--|
+      let s = o.subscribe(b)
+      call j1.next('a')
+      call j1.next('b')
+      call j2.next('d')
+      call j3.next('h')
+      call j1.next('c')
+      call j2.next('e')
+      call j1.complete()
+      Assert True(s.closed())
+      call j3.next('i')
+      call j2.next('f')
+      call j3.next('j')
+      call j2.complete()
+      Assert Equals(b.results, [
+            \ 'n:a', 'n:b', 'n:c', 'c',
+            \])
+    End
+  End
+
+  Describe .zip()
+    It should combine a source with a second
+      let j1 = Subject.new()
+      let j2 = Subject.new()
+      let b = BufferObserver.new()
+      let o = Observable.zip(j1, j2)
+      Assert True(Observable.is_observable(o))
+
+      " j1: ---1---2---3---
+      " j2: --4--5--6--7--8--
+      call o.subscribe(b)
+      call j2.next(4)
+      Assert Equals(b.results, [])
+
+      call j1.next(1)
+      Assert Equals(b.results, ['n:[1, 4]'])
+
+      call j2.next(5)
+      Assert Equals(b.results, ['n:[1, 4]'])
+
+      call j1.next(2)
+      Assert Equals(b.results, ['n:[1, 4]', 'n:[2, 5]'])
+
+      call j2.next(6)
+      Assert Equals(b.results, ['n:[1, 4]', 'n:[2, 5]'])
+
+      call j1.next(3)
+      call j2.next(7)
+      Assert Equals(b.results, ['n:[1, 4]', 'n:[2, 5]', 'n:[3, 6]'])
+
+      call j2.next(8)
+      Assert Equals(b.results, ['n:[1, 4]', 'n:[2, 5]', 'n:[3, 6]'])
+    End
+
+    It should end once one observable completes and its buffer is empty
+      let j1 = Subject.new()
+      let j2 = Subject.new()
+      let j3 = Subject.new()
+      let b = BufferObserver.new()
+      let o = Observable.zip(j1, j2, j3)
+      Assert True(Observable.is_observable(o))
+
+      " j1: ---a--b--c--|
+      " j2: ------d----e----f--------|
+      " j3: --------h----i----j---------
+      " o:  --------*----*----(*|)  j1 complete and buffer empty
+      let s = o.subscribe(b)
+      call j1.next('a')
+      call j1.next('b')
+      call j2.next('d')
+      call j3.next('h')
+      call j1.next('c')
+      call j2.next('e')
+      call j1.complete()
+      call j3.next('i')
+      call j2.next('f')
+      call j3.next('j')
+      Assert True(s.closed())
+      call j2.complete()
+      Assert Equals(b.results, [
+            \ "n:['a', 'd', 'h']",
+            \ "n:['b', 'e', 'i']",
+            \ "n:['c', 'f', 'j']",
+            \ 'c',
+            \])
+    End
+
+    It should end once one observable nexts and zips value from completed other observable whose buffer is empty
+      let j1 = Subject.new()
+      let j2 = Subject.new()
+      let j3 = Subject.new()
+      let b = BufferObserver.new()
+      let o = Observable.zip(j1, j2, j3)
+      Assert True(Observable.is_observable(o))
+
+      " j1: ---a--b--c--|
+      " j2: ------d----e----f|
+      " j3: --------h----i----j---------
+      " o:  --------*----*----(*|)  j2 buffer empty and signaled complete
+      let s = o.subscribe(b)
+      call j1.next('a')
+      call j1.next('b')
+      call j2.next('d')
+      call j3.next('h')
+      call j1.next('c')
+      call j2.next('e')
+      call j1.complete()
+      call j3.next('i')
+      call j2.next('f')
+      call j2.complete()
+      call j3.next('j')
+      Assert True(s.closed())
+      Assert Equals(b.results, [
+            \ "n:['a', 'd', 'h']",
+            \ "n:['b', 'e', 'i']",
+            \ "n:['c', 'f', 'j']",
+            \ 'c',
+            \])
+    End
+  End
+End
