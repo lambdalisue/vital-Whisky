@@ -1,5 +1,7 @@
 Describe Async.Observable
   Before all
+    let TIMEOUT = (!empty($APPVEYOR) || !empty($TRAVIS)) ? 5000 : 500
+
     let Later = vital#vital#import('Async.Later')
     let Promise = vital#vital#import('Async.Promise')
 
@@ -27,45 +29,45 @@ Describe Async.Observable
       Assert True(Observable.is_observable(o))
     End
 
-    It returns an observable from a given logic (never)
-      function! s:subscriber(observer) abort
+    It returns an observable from a given logic (never) [time-consuming]
+      function! Subscriber(observer) abort
         call a:observer.next(1)
         call a:observer.next(2)
         call a:observer.next(3)
       endfunction
 
-      let o = Observable.new(funcref('s:subscriber'))
+      let o = Observable.new(funcref('Subscriber'))
       let b = BufferObserver()
       Assert True(Observable.is_observable(o))
-      Assert True(Observable.wait(o.subscribe(b), 50))
+      Assert True(Observable.wait(o.subscribe(b), TIMEOUT))
       Assert Equals(b.results, ['n:1', 'n:2', 'n:3'])
     End
 
     It returns an observable from a given logic (complete)
-      function! s:subscriber(observer) abort
+      function! Subscriber(observer) abort
         call a:observer.next(1)
         call a:observer.next(2)
         call a:observer.complete()
       endfunction
 
-      let o = Observable.new(funcref('s:subscriber'))
+      let o = Observable.new(funcref('Subscriber'))
       let b = BufferObserver()
       Assert True(Observable.is_observable(o))
-      Assert False(Observable.wait(o.subscribe(b), 50))
+      Assert False(Observable.wait(o.subscribe(b), TIMEOUT))
       Assert Equals(b.results, ['n:1', 'n:2', 'c'])
     End
 
     It returns an observable from a given logic (error)
-      function! s:subscriber(observer) abort
+      function! Subscriber(observer) abort
         call a:observer.next(1)
         call a:observer.next(2)
         call a:observer.error(3)
       endfunction
 
-      let o = Observable.new(funcref('s:subscriber'))
+      let o = Observable.new(funcref('Subscriber'))
       let b = BufferObserver()
       Assert True(Observable.is_observable(o))
-      Assert False(Observable.wait(o.subscribe(b), 50))
+      Assert False(Observable.wait(o.subscribe(b), TIMEOUT))
       Assert Equals(b.results, ['n:1', 'n:2', 'e:3'])
     End
   End
@@ -75,57 +77,57 @@ Describe Async.Observable
       let o = Observable.of(1, 2, 3)
       let b = BufferObserver()
       Assert True(Observable.is_observable(o))
-      Assert False(Observable.wait(o.subscribe(b), 5000))
+      Assert False(Observable.wait(o.subscribe(b), TIMEOUT))
       Assert Equals(b.results, ['n:1', 'n:2', 'n:3', 'c'])
     End
   End
 
   Describe .from()
-    It returns an observable from a given observable (never)
-      function! s:subscriber(observer) abort
+    It returns an observable from a given observable (never) [time-consuming]
+      function! Subscriber(observer) abort
         call a:observer.next(1)
         call a:observer.next(2)
         call a:observer.next(3)
       endfunction
 
-      let s = Observable.new(funcref('s:subscriber'))
+      let s = Observable.new(funcref('Subscriber'))
       let o = Observable.from(s)
       let b = BufferObserver()
       Assert NotSame(o, s)
       Assert True(Observable.is_observable(o))
-      Assert True(Observable.wait(o.subscribe(b), 50))
+      Assert True(Observable.wait(o.subscribe(b), TIMEOUT))
       Assert Equals(b.results, ['n:1', 'n:2', 'n:3'])
     End
 
     It returns an observable from a given observable (complete)
-      function! s:subscriber(observer) abort
+      function! Subscriber(observer) abort
         call a:observer.next(1)
         call a:observer.next(2)
         call a:observer.complete()
       endfunction
 
-      let s = Observable.new(funcref('s:subscriber'))
+      let s = Observable.new(funcref('Subscriber'))
       let o = Observable.from(s)
       let b = BufferObserver()
       Assert NotSame(o, s)
       Assert True(Observable.is_observable(o))
-      Assert False(Observable.wait(o.subscribe(b), 50))
+      Assert False(Observable.wait(o.subscribe(b), TIMEOUT))
       Assert Equals(b.results, ['n:1', 'n:2', 'c'])
     End
 
     It returns an observable from a given observable (error)
-      function! s:subscriber(observer) abort
+      function! Subscriber(observer) abort
         call a:observer.next(1)
         call a:observer.next(2)
         call a:observer.error(3)
       endfunction
 
-      let s = Observable.new(funcref('s:subscriber'))
+      let s = Observable.new(funcref('Subscriber'))
       let o = Observable.from(s)
       let b = BufferObserver()
       Assert NotSame(o, s)
       Assert True(Observable.is_observable(o))
-      Assert False(Observable.wait(o.subscribe(b), 50))
+      Assert False(Observable.wait(o.subscribe(b), TIMEOUT))
       Assert Equals(b.results, ['n:1', 'n:2', 'e:3'])
     End
 
@@ -133,7 +135,7 @@ Describe Async.Observable
       let o = Observable.from(Promise.new({ resolve -> resolve('resolve') }))
       let b = BufferObserver()
       Assert True(Observable.is_observable(o))
-      Assert False(Observable.wait(o.subscribe(b), 50))
+      Assert False(Observable.wait(o.subscribe(b), TIMEOUT))
       Assert Equals(b.results, ['n:resolve', 'c'])
     End
 
@@ -141,7 +143,7 @@ Describe Async.Observable
       let o = Observable.from(Promise.new({ _, reject -> reject('reject') }))
       let b = BufferObserver()
       Assert True(Observable.is_observable(o))
-      Assert False(Observable.wait(o.subscribe(b), 50))
+      Assert False(Observable.wait(o.subscribe(b), TIMEOUT))
       Assert Equals(b.results, ['e:reject'])
     End
 
@@ -149,7 +151,7 @@ Describe Async.Observable
       let o = Observable.from([1, 2, 3])
       let b = BufferObserver()
       Assert True(Observable.is_observable(o))
-      Assert False(Observable.wait(o.subscribe(b), 5000))
+      Assert False(Observable.wait(o.subscribe(b), TIMEOUT))
       Assert Equals(b.results, ['n:1', 'n:2', 'n:3', 'c'])
     End
   End
@@ -159,7 +161,7 @@ Describe Async.Observable
       let s = Observable.new({ -> 0 }).subscribe()
       call Later.call({ -> s.unsubscribe() })
       Assert False(s.closed())
-      Assert False(Observable.wait(s, 50))
+      Assert False(Observable.wait(s, TIMEOUT))
       Assert True(s.closed())
     End
 
@@ -170,56 +172,64 @@ Describe Async.Observable
       call Later.call({ -> s2.unsubscribe() })
       Assert False(s1.closed())
       Assert False(s2.closed())
-      Assert False(Observable.wait([s1, s2], 50))
+      Assert False(Observable.wait([s1, s2], TIMEOUT))
       Assert True(s1.closed())
       Assert True(s2.closed())
     End
 
-    It waits until a given timeout and return TRUE
-      function! s:subscriber(observer) abort closure
-        " Never complete
-      endfunction
-
+    It waits until a given timeout and return TRUE [time-consuming]
       let s = Observable.new({ -> 0 }).subscribe()
       Assert False(s.closed())
       let t = reltime()
-      Assert True(Observable.wait(s, 100))
-      let d = reltimefloat(reltime(t)) * 1000
-      Assert False(s.closed())
-      Assert Compare(d, '>=', 100)
-      Assert Compare(d, '<', 1000)
+      Assert True(Observable.wait(s, TIMEOUT))
+      Assert Approx(reltimefloat(reltime(t)) * 1000, TIMEOUT)
     End
 
-    It waits at least the interval milliseconds and return FALSE (interval > delay)
-      function! s:subscriber(observer) abort
-        call timer_start(200, { -> a:observer.complete() })
+    It waits at least interval time when the observable complete within interval time-frame (delay < interval)
+      function! Subscriber(delay, observer) abort
+        call timer_start(a:delay, { -> a:observer.complete() })
       endfunction
 
-      let o = Observable.new(funcref('s:subscriber'))
+      " Observable ----|
+      " Interval   ^-----------------------^
+      " Complete   ------------------------|
+      " Time [ms]      100  200  300  400  500
+      if !empty($APPVEYOR) || !empty($TRAVIS)
+        let ts = [1000, 5000, 10000]
+      else
+        let ts = [100, 500, 1000]
+      endif
+      let o = Observable.new(funcref('Subscriber', [ts[0]]))
       let s = reltime()
       Assert False(Observable.wait(o.subscribe(), {
-            \ 'timeout': 5000,
-            \ 'interval': 1000,
+            \ 'interval': ts[1],
+            \ 'timeout': ts[2],
             \}))
-      let d = reltimefloat(reltime(s)) * 1000
-      Assert Compare(d, '>=', 1000)
-      Assert Compare(d, '<', 2000)
+      Assert Approx(reltimefloat(reltime(s)) * 1000, ts[1])
     End
 
-    It waits at least the interval milliseconds and return FALSE (interval < delay)
-      function! s:subscriber(observer) abort
-        call timer_start(1000, { -> a:observer.complete() })
+    It waits at least interval time when the observable complete within interval time-frame (delay > interval)
+      function! Subscriber(delay, observer) abort
+        call timer_start(a:delay, { -> a:observer.complete() })
       endfunction
 
-      let o = Observable.new(funcref('s:subscriber'))
+      " Observable --------------|
+      " Interval   ^--------^---------^
+      " Complete   -------------------|
+      " Time [ms]      100  200  300  400
+      if !empty($APPVEYOR) || !empty($TRAVIS)
+        let ts = [3000, 2000, 10000]
+      else
+        let ts = [300, 200, 1000]
+      endif
+
+      let o = Observable.new(funcref('Subscriber', [ts[0]]))
       let s = reltime()
       Assert False(Observable.wait(o.subscribe(), {
-            \ 'timeout': 5000,
-            \ 'interval': 200,
+            \ 'interval': ts[1],
+            \ 'timeout': ts[2],
             \}))
-      let d = reltimefloat(reltime(s)) * 1000
-      Assert Compare(d, '>=', 1000)
-      Assert Compare(d, '<', 1400)
+      Assert Approx(reltimefloat(reltime(s)) * 1000, ts[0] + ts[1])
     End
   End
 
@@ -260,11 +270,11 @@ Describe Async.Observable
       It executes the subscriber and returns a subscription
         let ns = []
 
-        function! s:subscriber(observer) abort closure
+        function! Subscriber(observer) abort closure
           call add(ns, 'called')
         endfunction
 
-        let s = Observable.new(funcref('s:subscriber')).subscribe()
+        let s = Observable.new(funcref('Subscriber')).subscribe()
         Assert KeyExists(s, 'closed')
         Assert KeyExists(s, 'unsubscribe')
         Assert IsFunc(s.closed)
@@ -275,12 +285,12 @@ Describe Async.Observable
       It executes the subscriber and return a subscription which calls cleanup function reterend in its unsubscribe method
         let ns = []
 
-        function! s:subscriber(observer) abort closure
+        function! Subscriber(observer) abort closure
           call add(ns, 'called')
           return { -> add(ns, 'cleaned') }
         endfunction
 
-        let s = Observable.new(funcref('s:subscriber')).subscribe()
+        let s = Observable.new(funcref('Subscriber')).subscribe()
         call s.unsubscribe()
         Assert Equals(ns, ['called', 'cleaned'])
       End
@@ -288,54 +298,54 @@ Describe Async.Observable
       It executes the subscriber and return a subscription which calls unsubscribe method of an object reterend in its unsubscribe method
         let ns = []
 
-        function! s:subscriber(observer) abort closure
+        function! Subscriber(observer) abort closure
           call add(ns, 'called')
           return { 'unsubscribe': { -> add(ns, 'cleaned') } }
         endfunction
 
-        let s = Observable.new(funcref('s:subscriber')).subscribe()
+        let s = Observable.new(funcref('Subscriber')).subscribe()
         call s.unsubscribe()
         Assert Equals(ns, ['called', 'cleaned'])
       End
 
       It executes the subscriber and emits 'next' events to a given observer
-        function! s:subscriber(observer) abort
+        function! Subscriber(observer) abort
           call a:observer.next(1)
           call a:observer.next(2)
           call a:observer.next(3)
         endfunction
 
         let b = BufferObserver()
-        call Observable.new(funcref('s:subscriber')).subscribe(b)
+        call Observable.new(funcref('Subscriber')).subscribe(b)
         Assert Equals(b.results, ['n:1', 'n:2', 'n:3'])
       End
 
       It executes the subscriber and emits 'error' events to a given observer
-        function! s:subscriber(observer) abort
+        function! Subscriber(observer) abort
           call a:observer.next(1)
           call a:observer.next(2)
           call a:observer.error(3)
         endfunction
 
         let b = BufferObserver()
-        call Observable.new(funcref('s:subscriber')).subscribe(b)
+        call Observable.new(funcref('Subscriber')).subscribe(b)
         Assert Equals(b.results, ['n:1', 'n:2', 'e:3'])
       End
 
       It executes the subscriber and emits 'complete' events to a given observer
-        function! s:subscriber(observer) abort
+        function! Subscriber(observer) abort
           call a:observer.next(1)
           call a:observer.next(2)
           call a:observer.complete()
         endfunction
 
         let b = BufferObserver()
-        call Observable.new(funcref('s:subscriber')).subscribe(b)
+        call Observable.new(funcref('Subscriber')).subscribe(b)
         Assert Equals(b.results, ['n:1', 'n:2', 'c'])
       End
 
       It executes the subscriber and emits events to a given observer independently
-        function! s:subscriber(observer) abort
+        function! Subscriber(observer) abort
           call a:observer.next(1)
           call a:observer.next(2)
           call a:observer.complete()
@@ -343,67 +353,67 @@ Describe Async.Observable
 
         let b1 = BufferObserver()
         let b2 = BufferObserver()
-        call Observable.new(funcref('s:subscriber')).subscribe(b1)
-        call Observable.new(funcref('s:subscriber')).subscribe(b2)
+        call Observable.new(funcref('Subscriber')).subscribe(b1)
+        call Observable.new(funcref('Subscriber')).subscribe(b2)
         Assert Equals(b1.results, ['n:1', 'n:2', 'c'])
         Assert Equals(b2.results, ['n:1', 'n:2', 'c'])
       End
 
       It executes the subscriber and emits events to a given observer asynchronously
-        function! s:subscriber(observer) abort closure
+        function! Subscriber(observer) abort closure
           call Later.call({ -> a:observer.next(1) })
           call Later.call({ -> a:observer.next(2) })
           call Later.call({ -> a:observer.next(3) })
         endfunction
 
         let b = BufferObserver()
-        let s = Observable.new(funcref('s:subscriber')).subscribe(b)
+        let s = Observable.new(funcref('Subscriber')).subscribe(b)
         sleep 10m
         Assert Equals(b.results, ['n:1', 'n:2', 'n:3'])
       End
 
       It executes the subscriber and emits events to a given observer asynchronously (unsubscribe)
-        function! s:subscriber(observer) abort closure
+        function! Subscriber(observer) abort closure
           call Later.call({ -> a:observer.next(1) })
           call Later.call({ -> a:observer.next(2) })
           call Later.call({ -> a:observer.next(3) })
         endfunction
 
         let b = BufferObserver()
-        let s = Observable.new(funcref('s:subscriber')).subscribe(b)
+        let s = Observable.new(funcref('Subscriber')).subscribe(b)
         call Later.call({ -> s.unsubscribe() })
-        Assert False(Observable.wait(s, 50))
+        Assert False(Observable.wait(s, TIMEOUT))
         Assert Equals(b.results, ['n:1', 'n:2', 'n:3'])
       End
 
       It executes the subscriber and emits events to a given observer asynchronously (complete)
-        function! s:subscriber(observer) abort closure
+        function! Subscriber(observer) abort closure
           call Later.call({ -> a:observer.next(1) })
           call Later.call({ -> a:observer.next(2) })
           call Later.call({ -> a:observer.complete() })
         endfunction
 
         let b = BufferObserver()
-        let s = Observable.new(funcref('s:subscriber')).subscribe(b)
-        Assert False(Observable.wait(s, 50))
+        let s = Observable.new(funcref('Subscriber')).subscribe(b)
+        Assert False(Observable.wait(s, TIMEOUT))
         Assert Equals(b.results, ['n:1', 'n:2', 'c'])
       End
 
       It executes the subscriber and emits events to a given observer asynchronously (error)
-        function! s:subscriber(observer) abort closure
+        function! Subscriber(observer) abort closure
           call Later.call({ -> a:observer.next(1) })
           call Later.call({ -> a:observer.next(2) })
           call Later.call({ -> a:observer.error(3) })
         endfunction
 
         let b = BufferObserver()
-        let s = Observable.new(funcref('s:subscriber')).subscribe(b)
-        Assert False(Observable.wait(s, 50))
+        let s = Observable.new(funcref('Subscriber')).subscribe(b)
+        Assert False(Observable.wait(s, TIMEOUT))
         Assert Equals(b.results, ['n:1', 'n:2', 'e:3'])
       End
 
       It executes the subscriber and emits events to a given observer asynchronously and independently
-        function! s:subscriber(observer) abort closure
+        function! Subscriber(observer) abort closure
           call Later.call({ -> a:observer.next(1) })
           call Later.call({ -> a:observer.next(2) })
           call Later.call({ -> a:observer.complete() })
@@ -411,15 +421,15 @@ Describe Async.Observable
 
         let b1 = BufferObserver()
         let b2 = BufferObserver()
-        let s1 = Observable.new(funcref('s:subscriber')).subscribe(b1)
-        let s2 = Observable.new(funcref('s:subscriber')).subscribe(b2)
-        Assert Equals(Observable.wait([s1, s2], 50), 0)
+        let s1 = Observable.new(funcref('Subscriber')).subscribe(b1)
+        let s2 = Observable.new(funcref('Subscriber')).subscribe(b2)
+        Assert Equals(Observable.wait([s1, s2], TIMEOUT), 0)
         Assert Equals(b1.results, ['n:1', 'n:2', 'c'])
         Assert Equals(b2.results, ['n:1', 'n:2', 'c'])
       End
 
       It follows an example code in a help
-        function! s:subscriber(o) abort closure
+        function! Subscriber(o) abort closure
           if a:o.closed()
             return
           endif
@@ -433,9 +443,9 @@ Describe Async.Observable
         endfunction
 
         let rs = []
-        let o = Observable.new(funcref('s:subscriber'))
+        let o = Observable.new(funcref('Subscriber'))
         let s = o.subscribe({ v -> add(rs, v) })
-        Assert Equals(Observable.wait(s, 300), 0)
+        Assert Equals(Observable.wait(s, TIMEOUT), 0)
         Assert Equals(rs, [1, 2, 3])
       End
     End
@@ -502,7 +512,7 @@ Describe Async.Observable
 	      \.foreach({ v -> add(rs, printf('f:%s', v)) })
 	      \.then({ v -> add(rs, printf('t:%s', v)) })
 	      \.catch({ e -> add(rs, printf('c:%s', e)) })
-	Assert NotEquals(Promise.wait(p, 50), [v:null, Promise.TimeoutError])
+	Assert NotEquals(Promise.wait(p, TIMEOUT), [v:null, Promise.TimeoutError])
 	Assert Equals(rs, ['f:1', 'f:2', 'f:3', 't:v:null'])
 
         let rs = []
@@ -510,7 +520,7 @@ Describe Async.Observable
 	      \.foreach({ v -> add(rs, printf('f:%s', v)) })
 	      \.then({ v -> add(rs, printf('t:%s', v)) })
 	      \.catch({ e -> add(rs, printf('c:%s', e)) })
-	Assert NotEquals(Promise.wait(p, 50), [v:null, Promise.TimeoutError])
+	Assert NotEquals(Promise.wait(p, TIMEOUT), [v:null, Promise.TimeoutError])
 	Assert Equals(rs, ['f:1', 'f:2', 'c:3'])
       End
     End
@@ -526,7 +536,7 @@ Describe Async.Observable
         let b2 = BufferObserver()
         let s1 = o1.subscribe(b1)
         let s2 = o2.subscribe(b2)
-        Assert False(Observable.wait([s1, s2], 50))
+        Assert False(Observable.wait([s1, s2], TIMEOUT))
         Assert Equals(b1.results, ['n:1', 'n:2', 'n:3', 'c'])
         Assert Equals(b2.results, ['n:1', 'n:2', 'n:3', 'c'])
       End
@@ -546,7 +556,7 @@ Describe Async.Observable
         let s1 = o1.subscribe(b1)
         let s2 = o2.subscribe(b2)
         let s3 = o2.subscribe(b3)
-        Assert False(Observable.wait([s1, s2, s3], 50))
+        Assert False(Observable.wait([s1, s2, s3], TIMEOUT))
         Assert Equals(b1.results, ['n:1', 'n:2', 'n:3', 'c'])
         Assert Equals(b2.results, ['n:1', 'n:2', 'n:3', 'c'])
         Assert Equals(b3.results, ['n:1', 'n:2', 'n:3', 'c'])
@@ -562,7 +572,7 @@ Describe Async.Observable
         let b2 = BufferObserver()
         let s1 = o1.subscribe(b1)
         let s2 = o2.subscribe(b2)
-        Assert False(Observable.wait([s1, s2], 50))
+        Assert False(Observable.wait([s1, s2], TIMEOUT))
         Assert Equals(b1.results, ['n:1', 'n:2', 'n:3', 'c'])
         Assert Equals(b2.results, ['e:hi'])
       End
@@ -581,7 +591,7 @@ Describe Async.Observable
       End
 
       It follows an example code in a help
-        function! s:subscriber(s, o) abort
+        function! Subscriber(s, o) abort
           return a:s.subscribe(
                 \ { v -> a:o.next(v * 2) },
                 \ { e -> a:o.error(e) },
@@ -589,7 +599,7 @@ Describe Async.Observable
                 \)
         endfunction
 
-        let Twice = { s, ctor -> ctor(funcref('s:subscriber', [s])) }
+        let Twice = { s, ctor -> ctor(funcref('Subscriber', [s])) }
 
         let rs = []
         let o = Observable.of(1, 2, 3).pipe(
@@ -598,7 +608,7 @@ Describe Async.Observable
               \ Twice,
               \)
         let s = o.subscribe({ v -> add(rs, v) })
-        Assert False(Observable.wait(s, 50))
+        Assert False(Observable.wait(s, TIMEOUT))
         Assert Equals(rs, [8, 16, 24])
       End
     End

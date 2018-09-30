@@ -1,0 +1,180 @@
+Describe Rx.AsyncSubject
+  Before all
+    let BufferObserver = vital#vital#import('Rx.Test.BufferObserver')
+  End
+
+  Before
+    let Observable = healthcheck#vital#import('Rx.Observable')
+    let AsyncSubject = healthcheck#vital#import('Rx.AsyncSubject')
+  End
+
+  Describe .new()
+    It returns a behavior subject (observable/observer)
+      let j = AsyncSubject.new()
+      Assert True(Observable.is_observable(j))
+    End
+  End
+
+  Describe AsyncSubject instance
+    It should emit the last value when complete
+      let j = AsyncSubject.new()
+      let b = BufferObserver.new()
+
+      call j.subscribe(b)
+      call j.next(1)
+      Assert Equals(b.results, [])
+      call j.next(2)
+      Assert Equals(b.results, [])
+      call j.complete()
+
+      Assert Equals(b.results, ['n:2', 'c'])
+    End
+
+    It should emit the last value when subscribing after complete
+      let j = AsyncSubject.new()
+      let b = BufferObserver.new()
+
+      call j.next(1)
+      call j.next(2)
+      call j.complete()
+
+      call j.subscribe(b)
+      Assert Equals(b.results, ['n:2', 'c'])
+    End
+
+    It should keep emitting the last value to subsequent ss
+      let j = AsyncSubject.new()
+      let b = BufferObserver.new()
+      let s = j.subscribe(b)
+
+      call j.next(1)
+      Assert Equals(b.results, [])
+      call j.next(2)
+      Assert Equals(b.results, [])
+      call j.complete()
+      Assert Equals(b.results, ['n:2', 'c'])
+
+      call s.unsubscribe()
+
+      let b = BufferObserver.new()
+      call j.subscribe(b)
+      Assert Equals(b.results, ['n:2', 'c'])
+    End
+
+    It should not emit values after complete
+      let j = AsyncSubject.new()
+      let b = BufferObserver.new()
+
+      call j.subscribe(b)
+
+      call j.next(1)
+      call j.next(2)
+      call j.complete()
+      call j.next(3)
+
+      Assert Equals(b.results, ['n:2', 'c'])
+    End
+
+    It should not allow change value after complete
+      let j = AsyncSubject.new()
+      let observer1 = BufferObserver.new()
+      let observer2 = BufferObserver.new()
+
+      call j.subscribe(observer1)
+
+      call j.next(1)
+      call j.complete()
+      Assert Equals(observer1.results, ['n:1', 'c'])
+
+      call j.next(2)
+      call j.subscribe(observer2)
+      Assert Equals(observer2.results, ['n:1','c'])
+    End
+
+    It should not emit values if unsubscribed before complete
+      let j = AsyncSubject.new()
+      let b = BufferObserver.new()
+      let s = j.subscribe(b)
+
+      call j.next(1)
+      Assert Equals(b.results, [])
+      call j.next(2)
+      Assert Equals(b.results, [])
+      call s.unsubscribe()
+      call j.next(3)
+      Assert Equals(b.results, [])
+      call j.complete()
+      Assert Equals(b.results, [])
+    End
+
+    It should just complete if no value has been nexted into it
+      let j = AsyncSubject.new('foo')
+      let b = BufferObserver.new()
+      call j.subscribe(b)
+
+      Assert Equals(b.results, [])
+      call j.complete()
+      Assert Equals(b.results, ['c'])
+    End
+
+    It should keep emitting complete to subsequent ss
+      let j = AsyncSubject.new()
+      let b = BufferObserver.new()
+      let s = j.subscribe(b)
+
+      Assert Equals(b.results, [])
+      call j.complete()
+      Assert Equals(b.results, ['c'])
+
+      call s.unsubscribe()
+      let b = BufferObserver.new()
+      call j.error('hello')
+      call j.subscribe(b)
+      Assert Equals(b.results, ['c'])
+    End
+
+    It should only error if an error is passed into it
+      let j = AsyncSubject.new()
+      let b = BufferObserver.new()
+      call j.subscribe(b)
+
+      call j.next(1)
+      Assert Equals(b.results, [])
+      call j.error('hello')
+      Assert Equals(b.results, ['e:hello'])
+    End
+
+    It should keep emitting error to subsequent ss
+      let j = AsyncSubject.new()
+      let b = BufferObserver.new()
+      let s = j.subscribe(b)
+
+      call j.next(1)
+      Assert Equals(b.results, [])
+      call j.error('hello')
+      Assert Equals(b.results, ['e:hello'])
+
+      call s.unsubscribe()
+      let b = BufferObserver.new()
+      call j.subscribe(b)
+      Assert Equals(b.results, ['e:hello'])
+    End
+
+    It should not allow send complete after error
+      let j = AsyncSubject.new()
+      let b = BufferObserver.new()
+      let s = j.subscribe(b)
+
+      call j.next(1)
+      Assert Equals(b.results, [])
+      call j.error('hello')
+      Assert Equals(b.results, ['e:hello'])
+
+      call s.unsubscribe()
+      let b = BufferObserver.new()
+      call j.complete()
+      call j.subscribe(b)
+      Assert Equals(b.results, ['e:hello'])
+    End
+  End
+End

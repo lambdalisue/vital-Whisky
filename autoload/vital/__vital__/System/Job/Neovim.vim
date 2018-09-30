@@ -26,13 +26,33 @@ function! s:start(args, options) abort
   return job
 endfunction
 
-function! s:_on_stdout(job, job_id, data, event) abort
-  call a:job.on_stdout(a:data)
-endfunction
+if has('nvim-0.3.0')
+  " Neovim 0.3.0 and over seems to invoke on_stdout/on_stderr with an empty
+  " string data when the stdout/stderr channel has closed.
+  " It is different behavior from Vim and Neovim prior to 0.3.0 so remove an
+  " empty string list to keep compatibility.
+  function! s:_on_stdout(job, job_id, data, event) abort
+    if a:data == ['']
+      return
+    endif
+    call a:job.on_stdout(a:data)
+  endfunction
 
-function! s:_on_stderr(job, job_id, data, event) abort
-  call a:job.on_stderr(a:data)
-endfunction
+  function! s:_on_stderr(job, job_id, data, event) abort
+    if a:data == ['']
+      return
+    endif
+    call a:job.on_stderr(a:data)
+  endfunction
+else
+  function! s:_on_stdout(job, job_id, data, event) abort
+    call a:job.on_stdout(a:data)
+  endfunction
+
+  function! s:_on_stderr(job, job_id, data, event) abort
+    call a:job.on_stderr(a:data)
+  endfunction
+endif
 
 function! s:_on_exit(job, job_id, exitval, event) abort
   let a:job.__exitval = a:exitval
