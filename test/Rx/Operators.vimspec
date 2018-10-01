@@ -554,6 +554,36 @@ Describe Rx.Operators
       Assert Equals(rs2, [1, 2, 3, 4])
     End
 
+    It should multicast a ConnectableObservable [ref_count]
+      let source = Subject.new()
+      let connectable = source.pipe(
+            \ Operators.multicast(Subject.new()),
+            \).ref_count()
+      let replayed = source.pipe(
+            \ Operators.multicast(ReplaySubject.new()),
+            \).ref_count()
+      let rs1 = []
+      let rs2 = []
+
+      call source.next(1)
+      call source.next(2)
+      call connectable.subscribe({v -> add(rs1, v)})
+      call replayed.subscribe({v -> add(rs2, v)})
+      call source.next(3)
+      call source.next(4)
+      call source.complete()
+
+      Assert Equals(rs1, [3, 4])
+      Assert Equals(rs2, [3, 4])
+
+      let rs1 = []
+      let rs2 = []
+      call connectable.subscribe({v -> add(rs1, v)})
+      call replayed.subscribe({v -> add(rs2, v)})
+      Assert Equals(rs1, [])
+      Assert Equals(rs2, [3, 4])
+    End
+
     It should accept a multicast selector and connect to a hot source for each subscriber
       let source = Subject.new()
       let connectable = source.pipe(
