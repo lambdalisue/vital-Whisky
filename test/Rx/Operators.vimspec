@@ -9,6 +9,8 @@ Describe Rx.Operators
   Before
     let Observable = healthcheck#vital#import('Rx.Observable')
     let Operators = healthcheck#vital#import('Rx.Operators')
+    let Subject = healthcheck#vital#import('Rx.Subject')
+    let ReplaySubject = healthcheck#vital#import('Rx.ReplaySubject')
   End
 
   Describe .catch_error()
@@ -490,22 +492,6 @@ Describe Rx.Operators
   End
 
   Describe .multicast()
-    Before
-      let Subject = healthcheck#vital#import('Rx.Subject')
-      let ReplaySubject = healthcheck#vital#import('Rx.ReplaySubject')
-    End
-
-    It should mirror a simple source Observable
-      let source = Observable.of(1, 2, 3, 4, 5)
-      let multi = source.pipe(
-            \ Operators.multicast(),
-            \)
-      let results = []
-      call multi.subscribe({v -> add(results, v)})
-      Assert Equals(Observable.wait(multi.connect(), TIMEOUT), 0)
-      Assert Equals(results, [1, 2, 3, 4, 5])
-    End
-
     It should accept Subject factory functions
       let source = Observable.of(1, 2, 3, 4, 5)
       let multi = source.pipe(
@@ -672,6 +658,94 @@ Describe Rx.Operators
     End
   End
 
+  Describe .publish()
+    It should multicast a ConnectableObservable
+      let source = Subject.new()
+      let connectable = source.pipe(
+            \ Operators.publish()
+            \)
+      let rs = []
+
+      call connectable.connect()
+
+      call source.next(1)
+      call source.next(2)
+      call connectable.subscribe({v -> add(rs, v)})
+      call source.next(3)
+      call source.next(4)
+      call source.complete()
+
+      Assert Equals(rs, [3, 4])
+    End
+
+    It should multicast a ConnectableObservable [ref_count]
+      let source = Subject.new()
+      let connectable = source.pipe(
+            \ Operators.publish()
+            \).ref_count()
+      let rs = []
+
+      call source.next(1)
+      call source.next(2)
+      call connectable.subscribe({v -> add(rs, v)})
+      call source.next(3)
+      call source.next(4)
+      call source.complete()
+
+      Assert Equals(rs, [3, 4])
+    End
+  End
+
+  Describe .publish_behavior()
+    " TODO: Write test
+  End
+
+  Describe .publish_last()
+    " TODO: Write test
+  End
+
+  Describe .publish_replay()
+    It should multicast a ConnectableObservable
+      let source = Subject.new()
+      let connectable = source.pipe(
+            \ Operators.publish_replay()
+            \)
+      let rs = []
+
+      call connectable.connect()
+
+      call source.next(1)
+      call source.next(2)
+      call connectable.subscribe({v -> add(rs, v)})
+      call source.next(3)
+      call source.next(4)
+      call source.complete()
+
+      Assert Equals(rs, [1, 2, 3, 4])
+    End
+
+    It should multicast a ConnectableObservable [ref_count]
+      let source = Subject.new()
+      let connectable = source.pipe(
+            \ Operators.publish_replay()
+            \).ref_count()
+      let rs = []
+
+      call source.next(1)
+      call source.next(2)
+      call connectable.subscribe({v -> add(rs, v)})
+      call source.next(3)
+      call source.next(4)
+      call source.complete()
+
+      Assert Equals(rs, [3, 4])
+
+      let rs = []
+      call connectable.subscribe({v -> add(rs, v)})
+      Assert Equals(rs, [3, 4])
+    End
+  End
+
   Describe .reduce()
     It reduces each values via given function
       let o = Observable.of(1, 1, 2, 3, 5, 8)
@@ -761,6 +835,48 @@ Describe Rx.Operators
       Assert False(Observable.wait(o.subscribe({ v -> add(rs2, v) }), TIMEOUT))
       Assert Equals(rs1, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
       Assert Equals(rs2, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
+    End
+  End
+
+  Describe .share()
+    It should multicast a ConnectableObservable [ref_count]
+      let source = Subject.new()
+      let connectable = source.pipe(
+            \ Operators.share()
+            \)
+      let rs = []
+
+      call source.next(1)
+      call source.next(2)
+      call connectable.subscribe({v -> add(rs, v)})
+      call source.next(3)
+      call source.next(4)
+      call source.complete()
+
+      Assert Equals(rs, [3, 4])
+    End
+  End
+
+  Describe .share_replay()
+    It should multicast a ConnectableObservable [ref_count]
+      let source = Subject.new()
+      let connectable = source.pipe(
+            \ Operators.share_replay()
+            \)
+      let rs = []
+
+      call source.next(1)
+      call source.next(2)
+      call connectable.subscribe({v -> add(rs, v)})
+      call source.next(3)
+      call source.next(4)
+      call source.complete()
+
+      Assert Equals(rs, [3, 4])
+
+      let rs = []
+      call connectable.subscribe({v -> add(rs, v)})
+      Assert Equals(rs, [3, 4])
     End
   End
 

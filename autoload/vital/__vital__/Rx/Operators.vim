@@ -1,6 +1,9 @@
 function! s:_vital_loaded(V) abort
   let s:Observable = a:V.import('Rx.Observable')
   let s:Subject = a:V.import('Rx.Subject')
+  let s:AsyncSubject = a:V.import('Rx.AsyncSubject')
+  let s:BehaviorSubject = a:V.import('Rx.BehaviorSubject')
+  let s:ReplaySubject = a:V.import('Rx.ReplaySubject')
   let s:ConnectableObservable = a:V.import('Rx.ConnectableObservable')
 endfunction
 
@@ -265,9 +268,8 @@ function! s:_merge_map_cleanup(ns) abort
   call a:ns.outer.unsubscribe()
 endfunction
 
-function! s:multicast(...) abort
-  let Subject = a:0 ? a:1 : v:null
-  return funcref('s:_multicast', [Subject])
+function! s:multicast(subject) abort
+  return funcref('s:_multicast', [a:subject])
 endfunction
 
 function! s:_multicast(subject, source, ...) abort
@@ -331,6 +333,22 @@ function! s:_reduce_complete(ns, observer) abort
   endif
   call a:observer.next(a:ns.accumulate)
   call a:observer.complete()
+endfunction
+
+function! s:publish(...) abort
+  return s:multicast(call(s:Subject.new, a:000, s:Subject))
+endfunction
+
+function! s:publish_behavior(...) abort
+  return s:multicast(call(s:BehaviorSubject.new, a:000, s:BehaviorSubject))
+endfunction
+
+function! s:publish_last(...) abort
+  return s:multicast(call(s:AsyncSubject.new, a:000, s:AsyncSubject))
+endfunction
+
+function! s:publish_replay(...) abort
+  return s:multicast(call(s:ReplaySubject.new, a:000, s:ReplaySubject))
 endfunction
 
 function! s:pluck(...) abort
@@ -405,6 +423,15 @@ function! s:_scan_next(ns, observer, value) abort
   endif
   call a:observer.next(a:ns.accumulate)
   let a:ns.index += 1
+endfunction
+
+function! s:share() abort
+  return { s -> s:publish()(s).ref_count() }
+endfunction
+
+function! s:share_replay(...) abort
+  let args = a:000
+  return { s -> call('s:publish_replay', args)(s).ref_count() }
 endfunction
 
 function! s:skip(the) abort
