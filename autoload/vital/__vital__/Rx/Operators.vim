@@ -11,6 +11,9 @@ function! s:_vital_depends() abort
   return [
         \ 'Rx.Observable',
         \ 'Rx.Subject',
+        \ 'Rx.AsyncSubject',
+        \ 'Rx.BehaviorSubject',
+        \ 'Rx.ReplaySubject',
         \ 'Rx.ConnectableObservable',
         \]
 endfunction
