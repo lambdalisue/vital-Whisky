@@ -28,6 +28,7 @@ function! s:is_observable(...) abort
   return call(s:Observable.is_observable, a:000, s:Observable)
 endfunction
 
+
 " Creation -----------------------------------------------------------------
 function! s:empty() abort
   return s:new({ o -> o.complete() })

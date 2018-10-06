@@ -288,6 +288,33 @@ function! s:_multicast(subject, source, ...) abort
   return s:ConnectableObservable.new(a:source, subject)
 endfunction
 
+function! s:ref_count() abort
+  return { s, ctor -> ctor(funcref('s:_ref_count_subscriber', [s])) }
+endfunction
+
+function! s:_ref_count_subscriber(source, observer) abort
+  if a:observer.closed()
+    return
+  endif
+  let a:source.__ref_count += 1
+  let ns = {
+        \ 'subscription': a:source.subscribe(a:observer),
+        \ 'connection': a:source.connect(),
+        \}
+  return funcref('s:_ref_count_cleanup', [ns, a:source])
+endfunction
+
+function! s:_ref_count_cleanup(ns, source) abort
+  call a:ns.subscription.unsubscribe()
+  let a:source.__ref_count -= 1
+  if a:source.__ref_count > 0
+    return
+  endif
+  let connection = a:ns.connection
+  let a:ns.connection = v:null
+  call connection.unsubscribe()
+endfunction
+
 function! s:reduce(fn, ...) abort
   let has_seed = a:0 isnot# 0
   let accumulate = a:0 ? a:1 : v:null
@@ -429,12 +456,12 @@ function! s:_scan_next(ns, observer, value) abort
 endfunction
 
 function! s:share() abort
-  return { s -> s:publish()(s).ref_count() }
+  return { s -> s.pipe(s:publish(), s:ref_count()) }
 endfunction
 
 function! s:share_replay(...) abort
   let args = a:000
-  return { s -> call('s:publish_replay', args)(s).ref_count() }
+  return { s -> s.pipe(call('s:publish_replay', args), s:ref_count()) }
 endfunction
 
 function! s:skip(the) abort
@@ -485,7 +512,7 @@ function! s:_skip_until_subscriber(notifier, source, observer) abort
   let ns.notifier = a:notifier.subscribe({
         \ 'next': funcref('s:_skip_until_next_notifier', [ns, a:observer]),
         \})
-  return { -> map([a:ns.source, a:ns.notifier], { -> v:val.unsubscribe }) }
+  return { -> map([ns.source, ns.notifier], { -> v:val.unsubscribe }) }
 endfunction
 
 function! s:_skip_until_next(ns, observer, value) abort
