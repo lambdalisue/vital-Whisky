@@ -1,6 +1,11 @@
 Describe Rx.Observer
   Before
     let Observer = healthcheck#vital#import('Rx.Observer')
+    set verbose=1
+  End
+
+  After
+    set verbose=0
   End
 
   Describe .new()

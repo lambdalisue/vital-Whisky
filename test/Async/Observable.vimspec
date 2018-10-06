@@ -17,6 +17,11 @@ Describe Async.Observable
 
   Before
     let Observable = healthcheck#vital#import('Async.Observable')
+    set verbose=1
+  End
+
+  After
+    set verbose=0
   End
 
   Describe .new()

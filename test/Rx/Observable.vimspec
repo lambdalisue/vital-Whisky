@@ -8,6 +8,11 @@ Describe Rx.Observable
   Before
     let Observable = healthcheck#vital#import('Rx.Observable')
     let Subject = healthcheck#vital#import('Rx.Subject')
+    set verbose=1
+  End
+
+  After
+    set verbose=0
   End
 
   Describe .empty()

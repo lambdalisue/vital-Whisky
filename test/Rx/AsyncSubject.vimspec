@@ -6,6 +6,11 @@ Describe Rx.AsyncSubject
   Before
     let Observable = healthcheck#vital#import('Rx.Observable')
     let AsyncSubject = healthcheck#vital#import('Rx.AsyncSubject')
+    set verbose=1
+  End
+
+  After
+    set verbose=0
   End
 
   Describe .new()
