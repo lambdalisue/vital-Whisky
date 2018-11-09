@@ -355,7 +355,7 @@ function! s:_reduce_next(ns, observer, value) abort
 endfunction
 
 function! s:_reduce_complete(ns, observer) abort
-  if a:ns.index is# 0
+  if a:ns.index is# 0 && a:ns.has_seed is# 0
     call a:observer.error({
           \ 'exception': 'vital: Rx.Operators: Cannot reduce an empty sequence',
           \})

@@ -788,6 +788,26 @@ Describe Rx.Operators
       Assert Equals(rs1, [10 * 1 * 1 * 2 * 3 * 5 * 8])
       Assert Equals(rs2, [10 * 1 * 1 * 2 * 3 * 5 * 8])
     End
+
+    It reports error when reduce an empty sequence
+      let o = Observable.of()
+            \.pipe(Operators.reduce({ a, v -> a * v }))
+
+      let b = BufferObserver.new()
+      Assert False(Observable.wait(o.subscribe(b), TIMEOUT))
+      Assert Equals(b.results, [
+            \ 'e:{''exception'': ''vital: Rx.Operators: Cannot reduce an empty sequence''}',
+            \])
+    End
+
+    It completes when seed is given even when reduce an empty sequence
+      let o = Observable.of()
+            \.pipe(Operators.reduce({ a, v -> a * v }, 3))
+
+      let b = BufferObserver.new()
+      Assert False(Observable.wait(o.subscribe(b), TIMEOUT))
+      Assert Equals(b.results, ['n:3', 'c'])
+    End
   End
 
   Describe .scan()
