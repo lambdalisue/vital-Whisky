@@ -11,6 +11,11 @@ Describe Rx.Operators
     let Operators = healthcheck#vital#import('Rx.Operators')
     let Subject = healthcheck#vital#import('Rx.Subject')
     let ReplaySubject = healthcheck#vital#import('Rx.ReplaySubject')
+    set verbose=1
+  End
+
+  After
+    set verbose=0
   End
 
   Describe .catch_error()
@@ -540,36 +545,6 @@ Describe Rx.Operators
       Assert Equals(rs2, [1, 2, 3, 4])
     End
 
-    It should multicast a ConnectableObservable [ref_count]
-      let source = Subject.new()
-      let connectable = source.pipe(
-            \ Operators.multicast(Subject.new()),
-            \).ref_count()
-      let replayed = source.pipe(
-            \ Operators.multicast(ReplaySubject.new()),
-            \).ref_count()
-      let rs1 = []
-      let rs2 = []
-
-      call source.next(1)
-      call source.next(2)
-      call connectable.subscribe({v -> add(rs1, v)})
-      call replayed.subscribe({v -> add(rs2, v)})
-      call source.next(3)
-      call source.next(4)
-      call source.complete()
-
-      Assert Equals(rs1, [3, 4])
-      Assert Equals(rs2, [3, 4])
-
-      let rs1 = []
-      let rs2 = []
-      call connectable.subscribe({v -> add(rs1, v)})
-      call replayed.subscribe({v -> add(rs2, v)})
-      Assert Equals(rs1, [])
-      Assert Equals(rs2, [3, 4])
-    End
-
     It should accept a multicast selector and connect to a hot source for each subscriber
       let source = Subject.new()
       let connectable = source.pipe(
@@ -677,23 +652,6 @@ Describe Rx.Operators
 
       Assert Equals(rs, [3, 4])
     End
-
-    It should multicast a ConnectableObservable [ref_count]
-      let source = Subject.new()
-      let connectable = source.pipe(
-            \ Operators.publish()
-            \).ref_count()
-      let rs = []
-
-      call source.next(1)
-      call source.next(2)
-      call connectable.subscribe({v -> add(rs, v)})
-      call source.next(3)
-      call source.next(4)
-      call source.complete()
-
-      Assert Equals(rs, [3, 4])
-    End
   End
 
   Describe .publish_behavior()
@@ -723,26 +681,80 @@ Describe Rx.Operators
 
       Assert Equals(rs, [1, 2, 3, 4])
     End
+  End
 
-    It should multicast a ConnectableObservable [ref_count]
+  Describe .ref_count()
+    It should turn a multicasted Observable an automatically (dis)connecting hot one
       let source = Subject.new()
-      let connectable = source.pipe(
-            \ Operators.publish_replay()
-            \).ref_count()
+      let observable = source.pipe(
+            \ Operators.publish(),
+            \ Operators.ref_count(),
+            \)
       let rs = []
 
       call source.next(1)
       call source.next(2)
-      call connectable.subscribe({v -> add(rs, v)})
+      call observable.subscribe({v -> add(rs, v)})
       call source.next(3)
       call source.next(4)
       call source.complete()
 
       Assert Equals(rs, [3, 4])
+    End
+
+    It should unsubscribe from the source when all other subscriptions are unsubscribed
+      function! Subscriber(rs, observer) abort
+        call a:observer.next(1)
+        return { -> add(a:rs, 'unsubscribed') }
+      endfunction
 
       let rs = []
-      call connectable.subscribe({v -> add(rs, v)})
-      Assert Equals(rs, [3, 4])
+      let observable = Observable.new(funcref('Subscriber', [rs])).pipe(
+            \ Operators.publish(),
+            \ Operators.ref_count(),
+            \)
+      let s1 = observable.subscribe({ -> 0 })
+      let s2 = observable.subscribe({ -> 0 })
+      let s3 = observable.subscribe({ -> 0 })
+
+      call s1.unsubscribe()
+      call s2.unsubscribe()
+      call s3.unsubscribe()
+
+      Assert Equals(rs, ['unsubscribed'])
+    End
+
+    It should not unsubscribe when a subscriber synchronously unsubscribes if other subscribers are present
+      function! Subscriber(rs, observer) abort
+        call a:observer.next(1)
+        return { -> add(a:rs, 'unsubscribed') }
+      endfunction
+
+      let rs = []
+      let observable = Observable.new(funcref('Subscriber', [rs])).pipe(
+            \ Operators.publish_replay(1),
+            \ Operators.ref_count(),
+            \)
+
+      call observable.subscribe()
+      call observable.subscribe().unsubscribe()
+
+      Assert Equals(rs, [])
+    End
+
+    It should not unsubscribe when a subscriber synchronously unsubscribes if other subscribers are present and the source is a Subject
+      let rs = []
+      let subject = Subject.new()
+      let observable = subject.pipe(
+            \ Operators.publish_replay(1),
+            \ Operators.ref_count(),
+            \)
+
+      call observable.subscribe({ v -> add(rs, v) })
+      call subject.next('the number one')
+      call observable.pipe(Operators.first()).subscribe().unsubscribe()
+      call subject.next('the number two')
+      Assert Equals(rs, ['the number one', 'the number two'])
     End
   End
 
@@ -775,6 +787,26 @@ Describe Rx.Operators
       Assert False(Observable.wait(o.subscribe({ v -> add(rs2, v) }), TIMEOUT))
       Assert Equals(rs1, [10 * 1 * 1 * 2 * 3 * 5 * 8])
       Assert Equals(rs2, [10 * 1 * 1 * 2 * 3 * 5 * 8])
+    End
+
+    It reports error when reduce an empty sequence
+      let o = Observable.of()
+            \.pipe(Operators.reduce({ a, v -> a * v }))
+
+      let b = BufferObserver.new()
+      Assert False(Observable.wait(o.subscribe(b), TIMEOUT))
+      Assert Equals(b.results, [
+            \ 'e:{''exception'': ''vital: Rx.Operators: Cannot reduce an empty sequence''}',
+            \])
+    End
+
+    It completes when seed is given even when reduce an empty sequence
+      let o = Observable.of()
+            \.pipe(Operators.reduce({ a, v -> a * v }, 3))
+
+      let b = BufferObserver.new()
+      Assert False(Observable.wait(o.subscribe(b), TIMEOUT))
+      Assert Equals(b.results, ['n:3', 'c'])
     End
   End
 
@@ -839,7 +871,7 @@ Describe Rx.Operators
   End
 
   Describe .share()
-    It should multicast a ConnectableObservable [ref_count]
+    It should multicast a ConnectableObservable
       let source = Subject.new()
       let connectable = source.pipe(
             \ Operators.share()
@@ -858,7 +890,7 @@ Describe Rx.Operators
   End
 
   Describe .share_replay()
-    It should multicast a ConnectableObservable [ref_count]
+    It should multicast a ConnectableObservable
       let source = Subject.new()
       let connectable = source.pipe(
             \ Operators.share_replay()

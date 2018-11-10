@@ -8,6 +8,11 @@ Describe Rx.ReplaySubject
   Before
     let Observable = healthcheck#vital#import('Rx.Observable')
     let ReplaySubject = healthcheck#vital#import('Rx.ReplaySubject')
+    set verbose=1
+  End
+
+  After
+    set verbose=0
   End
 
   Describe .new()

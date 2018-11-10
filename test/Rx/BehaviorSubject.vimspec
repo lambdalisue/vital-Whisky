@@ -6,6 +6,11 @@ Describe Rx.BehaviorSubject
   Before
     let Observable = healthcheck#vital#import('Rx.Observable')
     let BehaviorSubject = healthcheck#vital#import('Rx.BehaviorSubject')
+    set verbose=1
+  End
+
+  After
+    set verbose=0
   End
 
   Describe .new()
