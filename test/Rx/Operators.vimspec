@@ -275,6 +275,36 @@ Describe Rx.Operators
     End
   End
 
+  Describe .every()
+    It emits false if some values false
+      let o = Observable.of(1, 2, 3, 4, 5).pipe(
+            \ Operators.every({ v -> v % 2 is# 0 }),
+            \)
+      let rs1 = []
+      let rs2 = []
+      Assert False(Observable.wait(o.subscribe({ v -> add(rs1, v) }), TIMEOUT))
+      Assert Equals(rs1, [v:false])
+      Assert Equals(rs2, [])
+      Assert False(Observable.wait(o.subscribe({ v -> add(rs2, v) }), TIMEOUT))
+      Assert Equals(rs1, [v:false])
+      Assert Equals(rs2, [v:false])
+    End
+
+    It emits true if all values true
+      let o = Observable.of(2, 4, 6, 8, 10).pipe(
+            \ Operators.every({ v -> v % 2 is# 0 }),
+            \)
+      let rs1 = []
+      let rs2 = []
+      Assert False(Observable.wait(o.subscribe({ v -> add(rs1, v) }), TIMEOUT))
+      Assert Equals(rs1, [v:true])
+      Assert Equals(rs2, [])
+      Assert False(Observable.wait(o.subscribe({ v -> add(rs2, v) }), TIMEOUT))
+      Assert Equals(rs1, [v:true])
+      Assert Equals(rs2, [v:true])
+    End
+  End
+
   Describe .first()
     It emits first value from sequence
       let o = Observable.of(1, 1, 2, 3, 5, 8)
