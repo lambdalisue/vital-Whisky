@@ -617,5 +617,51 @@ Describe Async.Observable
         Assert Equals(rs, [8, 16, 24])
       End
     End
+
+    Describe .to_promise()
+      It executes the subscriber and return a promise
+        let p = Observable.of(1, 2, 3)
+              \.to_promise()
+        Assert True(Promise.is_promise(p))
+      End
+
+      It executes the subscriber and return a promise which is resolved once the observable complete
+        let ns = []
+        call Observable.of(1, 2, 3)
+              \.to_promise()
+              \.then({ v -> add(ns, printf('resolve:%s', v)) })
+              \.catch({ e -> add(ns, printf('reject:%s', e)) })
+        sleep 100m
+        Assert Equals(ns, ['resolve:3'])
+      End
+
+      It executes the subscriber and return a promise which is rejected once the observable error
+        let ns = []
+        call Observable.new({ o -> o.error('hello') })
+              \.to_promise()
+              \.then({ v -> add(ns, printf('resolve:%s', v)) })
+              \.catch({ e -> add(ns, printf('reject:%s', e)) })
+        sleep 100m
+        Assert Equals(ns, ['reject:hello'])
+      End
+
+      It follows an example code in a help
+        let rs = []
+	let p = Observable.of(1, 2, 3)
+	      \.to_promise()
+	      \.then({ v -> add(rs, printf('t:%s', v)) })
+	      \.catch({ e -> add(rs, printf('c:%s', e)) })
+	Assert NotEquals(Promise.wait(p, TIMEOUT), [v:null, Promise.TimeoutError])
+	Assert Equals(rs, ['t:3'])
+
+        let rs = []
+	let p = Observable.new({ o -> [o.next(1), o.next(2), o.error(3)] })
+	      \.to_promise()
+	      \.then({ v -> add(rs, printf('t:%s', v)) })
+	      \.catch({ e -> add(rs, printf('c:%s', e)) })
+	Assert NotEquals(Promise.wait(p, TIMEOUT), [v:null, Promise.TimeoutError])
+	Assert Equals(rs, ['c:3'])
+      End
+    End
   End
 End
