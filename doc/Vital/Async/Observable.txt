@@ -279,7 +279,7 @@ Observable object			*Vital.Async.Observable-Observable*
 	      \.catch({ e -> execute('echo printf("c:%s", e)', '') })
 	" f:1
 	" f:2
-	" t:3
+	" c:3
 <
 			*Vital.Async.Observable-Observable.pipe()*
 {observable}.pipe([{operators}...])
