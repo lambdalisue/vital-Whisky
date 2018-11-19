@@ -1,12 +1,14 @@
 function! s:_vital_depends() abort
   return [
         \ 'System.Job',
+        \ 'Async.Promise',
         \ 'Async.Observable',
         \]
 endfunction
 
 function! s:_vital_loaded(V) abort
   let s:Job = a:V.import('System.Job')
+  let s:Promise = a:V.import('Async.Promise')
   let s:Observable = a:V.import('Async.Observable')
 endfunction
 
@@ -30,6 +32,37 @@ function! s:new(args, ...) abort
         \ 'stdin': [],
         \}, a:0 ? a:1 : {})
   return s:Observable.new(funcref('s:_process_subscriber', [a:args, options]))
+endfunction
+
+function! s:start(...) abort
+  let process = call('s:new', a:000)
+  return s:Promise.new(funcref('s:_start_executor', [process]))
+endfunction
+
+function! s:_start_executor(process, resolve, reject) abort
+  let r = {
+        \ 'exitval': 0,
+        \ 'stdout': [],
+        \ 'stderr': [],
+        \}
+  call a:process.pipe(
+        \ s:_squash('stdout'),
+        \ s:_squash('stderr'),
+        \).subscribe({
+        \ 'next': funcref('s:_start_next', [r]),
+        \ 'error': { e -> a:reject(extend(r, { 'exitval': e })) },
+        \ 'complete': { -> a:resolve(r) },
+        \})
+endfunction
+
+function! s:_start_next(r, value) abort
+  for key in keys(a:value)
+    if key ==# 'stdout' || key ==# 'stderr'
+      call extend(a:r[key], a:value[key])
+    else
+      let a:r[key] = a:value[key]
+    endif
+  endfor
 endfunction
 
 function! s:_process_subscriber(args, options, observer) abort

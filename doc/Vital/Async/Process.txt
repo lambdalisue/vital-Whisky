@@ -115,6 +115,13 @@ To normalize data like above, Process module provides original operators:
 	" 'Bye'
 <
 
+If you don't need intermediate status, use |Vital.Async.Process.start()|
+which return a |Vital.Async.Promise| instance:
+>
+	call Process.start(['echo', 'Hello'])
+	      \.then({ v -> execute('echo v', '') })
+	" { 'pid': xxxxx, 'exitval': 0, 'stdout': ['Hello'], 'stderr': [] }
+<
 
 =============================================================================
 FUNCTIONS				*Vital.Async.Process-functions*
@@ -138,6 +145,23 @@ FUNCTIONS				*Vital.Async.Process-functions*
 
 	It throws an exception when called from non supported Vim/Neovim.
 
+.start({args}[, {options}])		*Vital.Async.Process.start()*
+
+	Execute a command {args} and return a Promise instance which will
+	be resolved when the process is terminated.
+
+	The promise instance will be resolved/rejected with an object which
+	has the following attributes.
+
+	"pid"		PID of the process
+	"exitval"	Exit value of the process
+	"stdout"	Stdout of the process in newline separated list.
+	"stderr"	Stderr of the process in newline separated list.
+
+	The promise instance will be resolved when exitval is 0, otherwise
+	it will be rejected.
+
+	See |Vital.Async.Process.new()| for available {options}.
 
 =============================================================================
 EMISSIONS				*Vital.Async.Process-emissions*
