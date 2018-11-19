@@ -107,6 +107,7 @@ function! s:_new_observable(subscriber) abort
         \ 'subscribe': funcref('s:_observable_subscribe'),
         \ 'foreach': funcref('s:_observable_foreach'),
         \ 'pipe': funcref('s:_observable_pipe'),
+        \ 'to_promise': funcref('s:_observable_to_promise'),
         \}
   let observable[s:SYMBOL] = funcref('s:_observable_symbol')
   return observable
@@ -168,6 +169,23 @@ function! s:_observable_pipe(...) abort dict
     let next = call(Operator, [next, funcref('s:new')])
   endfor
   return next
+endfunction
+
+function! s:_observable_to_promise() abort dict
+  return s:Promise.new(funcref('s:_observable_to_promise_executor', [self]))
+endfunction
+
+function! s:_observable_to_promise_executor(source, resolve, reject) abort
+  let ns = {
+        \ 'value': 0,
+        \ 'resolve': a:resolve,
+        \ 'reject': a:reject,
+        \}
+  call a:source.subscribe({
+        \ 'next': { v -> extend(ns, { 'value': v }) },
+        \ 'error': { e -> a:reject(e) },
+        \ 'complete': { -> a:resolve(ns.value) },
+        \})
 endfunction
 
 

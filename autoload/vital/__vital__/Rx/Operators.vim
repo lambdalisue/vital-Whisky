@@ -95,6 +95,45 @@ function! s:delay(delay) abort
   return { s -> s:Observable.concat(delayer, s) }
 endfunction
 
+function! s:every(fn) abort
+  return { s, ctor -> ctor(funcref('s:_every_subscriber', [a:fn, s])) }
+endfunction
+
+function! s:_every_subscriber(fn, source, observer) abort
+  if a:observer.closed()
+    return
+  endif
+  let ns = {
+        \ 'fn': a:fn,
+        \ 'index': -1,
+        \}
+  return a:source.subscribe({
+        \ 'next': funcref('s:_every_next', [ns, a:observer]),
+        \ 'error': { e -> a:observer.error(e) },
+        \ 'complete': funcref('s:_every_complete', [ns, a:observer]),
+        \})
+endfunction
+
+function! s:_every_next(ns, observer, value) abort
+  let a:ns.index += 1
+  try
+    if !a:ns.fn(a:value, a:ns.index)
+      call a:observer.next(v:false)
+      call a:observer.complete()
+    endif
+  catch
+    return a:observer.error({
+          \ 'exception': v:exception,
+          \ 'throwpoint': v:throwpoint,
+          \})
+  endtry
+endfunction
+
+function! s:_every_complete(ns, observer) abort
+  call a:observer.next(v:true)
+  call a:observer.complete()
+endfunction
+
 function! s:filter(fn) abort
   return { s, ctor -> ctor(funcref('s:_filter_subscriber', [a:fn, s])) }
 endfunction

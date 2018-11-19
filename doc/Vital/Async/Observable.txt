@@ -279,7 +279,7 @@ Observable object			*Vital.Async.Observable-Observable*
 	      \.catch({ e -> execute('echo printf("c:%s", e)', '') })
 	" f:1
 	" f:2
-	" t:3
+	" c:3
 <
 			*Vital.Async.Observable-Observable.pipe()*
 {observable}.pipe([{operators}...])
@@ -307,6 +307,25 @@ Observable object			*Vital.Async.Observable-Observable*
 	" 8
 	" 16
 	" 24
+<
+			*Vital.Async.Observable-Observable.to_promise()*
+{observable}.to_promise()
+
+	Subscribe the observable and returns an |Vital.Async.Promise| which
+	will be resolved with the last value when the observable emits
+	complete or be rejected when the observable emits error.
+>
+	call Observable.of(1, 2, 3)
+	      \.to_promise()
+	      \.then({ v -> execute('echo printf("t:%s", v)', '') })
+	      \.catch({ e -> execute('echo printf("c:%s", e)', '') })
+	" t:v:3
+
+	call Observable.new({ o -> [o.next(1), o.next(2), o.error(3)] })
+	      \.to_promise()
+	      \.then({ v -> execute('echo printf("t:%s", v)', '') })
+	      \.catch({ e -> execute('echo printf("c:%s", e)', '') })
+	" c:3
 <
 
 -----------------------------------------------------------------------------
