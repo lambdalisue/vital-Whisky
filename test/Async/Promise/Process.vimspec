@@ -69,8 +69,8 @@ Describe Async.Promise.Process
       It sends given data to the process through stdin promise when resolved (string list)
         let p = Process.start(Args('reply.py'), {
               \ 'stdin': Promise.resolve([
-              \   'Hello', ' World', "\n",
-              \   'Hello', ' World', "\n",
+              \   'Hello', ' World', '',
+              \   'Hello', ' World', '',
               \   'This is not line',
               \ ]),
               \})
@@ -105,8 +105,8 @@ Describe Async.Promise.Process
       It does NOT send given data to the process through stdin promise when rejected (string list)
         let p = Process.start(Args('reply.py'), {
               \ 'stdin': Promise.reject([
-              \   'Hello', ' World', "\n",
-              \   'Hello', ' World', "\n",
+              \   'Hello', ' World', '',
+              \   'Hello', ' World', '',
               \   'This is not line',
               \ ]),
               \})
@@ -128,10 +128,9 @@ Describe Async.Promise.Process
         call d.resolve()
         let [r, e] = Promise.wait(p, 100)
         Assert Equals(e, v:null)
-        Assert Equals(Dict.omit(r, ['args']), {
+        Assert Equals(Dict.omit(r, ['args', 'exitval']), {
               \ 'stdout': [''],
               \ 'stderr': [''],
-              \ 'exitval': -1,
               \})
       End
 
