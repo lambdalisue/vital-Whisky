@@ -35,6 +35,9 @@ function! s:new(args, ...) abort
 endfunction
 
 function! s:start(...) abort
+  echohl Error
+  echomsg 'vital: Async.Observable.Process: start() is deprecated. Use Async.Promise.Process.start() instead'
+  echohl None
   let process = call('s:new', a:000)
   return s:Promise.new(funcref('s:_start_executor', [process]))
 endfunction

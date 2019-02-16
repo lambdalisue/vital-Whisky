@@ -460,26 +460,6 @@ Describe Async.Observable.Process
     endif
   End
 
-  Describe .start()
-    if !has('patch-8.0.0107') && !has('nvim-0.2.0')
-      It throws an exception in Vim prior to 8.0.0107 or Neovim prior to 0.2.0
-        Throws /is not supported/ Process.start(Args('echo.py'))
-      End
-    else
-      It starts a process and return a promise
-        let p = Process.start(Args('echo.py'))
-        Assert True(Promise.is_promise(p))
-        let [r, e] = Promise.wait(p)
-        Assert Equals(e, v:null)
-        Assert Equals(Dict.omit(r, ['pid']), {
-              \ 'stdout': ['Hello World', 'Hello World'],
-              \ 'stderr': [],
-              \ 'exitval': 0,
-              \})
-      End
-    endif
-  End
-
   Describe Process instance
     Before
       if !has('patch-8.0.0107') && !has('nvim-0.2.0')

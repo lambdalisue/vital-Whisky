@@ -1,0 +1,197 @@
+Describe Async.Promise.Process
+  Before all
+    let TIMEOUT = (!empty($APPVEYOR) || !empty($TRAVIS)) ? 30000 : 5000
+    let Deferred = vital#vital#import('Async.Promise.Deferred')
+    let Promise = vital#vital#import('Async.Promise')
+    let Sandbox = vital#vital#import('System.Sandbox')
+    let Path = vital#vital#import('System.Filepath')
+    let Dict = vital#vital#import('Data.Dict')
+    let root = Path.abspath(Path.realpath('test/_testdata/System/Job'))
+
+    function! Args(script, ...) abort closure
+      let p = executable('python3') ? 'python3' : 'python'
+      let s = Path.join(root, a:script)
+      return [p, s] + a:000
+    endfunction
+  End
+
+  Before
+    let Process = healthcheck#vital#import('Async.Promise.Process')
+  End
+
+  Describe .start()
+    Before
+      if !has('patch-8.0.0107') && !has('nvim-0.2.0')
+        Skip Prior to Vim 8.0.0107 or Neovim 0.2.0 is not supported
+      endif
+    End
+
+    It starts a process and return a promise
+      let p = Process.start(Args('echo.py'))
+      Assert True(Promise.is_promise(p))
+      let [r, e] = Promise.wait(p, TIMEOUT)
+      Assert Equals(e, v:null)
+      Assert Equals(Dict.omit(r, ['args']), {
+            \ 'stdout': ['Hello World', 'Hello World', ''],
+            \ 'stderr': [''],
+            \ 'exitval': 0,
+            \})
+    End
+
+    It starts a process and return a promise
+      let p = Process.start(['invalid-executable'])
+      Assert True(Promise.is_promise(p))
+      let [r, e] = Promise.wait(p, TIMEOUT)
+      Assert NotEquals(e, v:null)
+      Assert Equals(r, v:null)
+    End
+
+    Context stdin option
+      It sends given data to the process through stdin promise when resolved (string)
+        let p = Process.start(Args('reply.py'), {
+              \ 'stdin': Promise.resolve(
+              \   "Hello World\nHello World\nThis is not line",
+              \ ),
+              \})
+        let [r, e] = Promise.wait(p, TIMEOUT)
+        Assert Equals(e, v:null)
+        Assert Equals(Dict.omit(r, ['args']), {
+              \ 'stdout': [
+              \   'received: Hello World',
+              \   'received: Hello World',
+              \   'received: This is not line',
+              \ ],
+              \ 'stderr': [''],
+              \ 'exitval': 0,
+              \})
+      End
+
+      It sends given data to the process through stdin promise when resolved (string list)
+        let p = Process.start(Args('reply.py'), {
+              \ 'stdin': Promise.resolve([
+              \   'Hello', ' World', "\n",
+              \   'Hello', ' World', "\n",
+              \   'This is not line',
+              \ ]),
+              \})
+        let [r, e] = Promise.wait(p, TIMEOUT)
+        Assert Equals(e, v:null)
+        Assert Equals(Dict.omit(r, ['args']), {
+              \ 'stdout': [
+              \   'received: Hello',
+              \   'received:  World',
+              \   'received: ',
+              \   'received: Hello',
+              \   'received:  World',
+              \   'received: ',
+              \   'received: This is not line',
+              \ ],
+              \ 'stderr': [''],
+              \ 'exitval': 0,
+              \})
+      End
+
+      It does NOT send given data to the process through stdin promise when rejected (string)
+        let p = Process.start(Args('reply.py'), {
+              \ 'stdin': Promise.reject(
+              \   "Hello World\nHello World\nThis is not line",
+              \ ),
+              \})
+        let [r, e] = Promise.wait(p, 100)
+        Assert Equals(e, Promise.TimeoutError)
+        Assert Equals(r, v:null)
+      End
+
+      It does NOT send given data to the process through stdin promise when rejected (string list)
+        let p = Process.start(Args('reply.py'), {
+              \ 'stdin': Promise.reject([
+              \   'Hello', ' World', "\n",
+              \   'Hello', ' World', "\n",
+              \   'This is not line',
+              \ ]),
+              \})
+        let [r, e] = Promise.wait(p, 100)
+        Assert Equals(e, Promise.TimeoutError)
+        Assert Equals(r, v:null)
+      End
+    End
+
+    Context abort option
+      It stops an internal job which is running when resolved
+        let d = Deferred.new()
+        let p = Process.start(Args('never.py'), {
+              \ 'abort': d,
+              \})
+        let [r, e] = Promise.wait(p, 100)
+        Assert Equals(e, Promise.TimeoutError)
+        Assert Equals(r, v:null)
+        call d.resolve()
+        let [r, e] = Promise.wait(p, 100)
+        Assert Equals(e, v:null)
+        Assert Equals(Dict.omit(r, ['args']), {
+              \ 'stdout': [''],
+              \ 'stderr': [''],
+              \ 'exitval': -1,
+              \})
+      End
+
+      It does NOT stop an internal job which is running when rejected
+        let d = Deferred.new()
+        let p = Process.start(Args('never.py'), {
+              \ 'abort': d,
+              \})
+        let [r, e] = Promise.wait(p, 100)
+        Assert Equals(e, Promise.TimeoutError)
+        Assert Equals(r, v:null)
+        call d.reject()
+        let [r, e] = Promise.wait(p, 100)
+        Assert Equals(e, Promise.TimeoutError)
+        Assert Equals(r, v:null)
+      End
+    End
+
+    if has('patch-8.0.0902') || has('nvim')
+      Context cwd option
+        Before all
+          let sandbox = Sandbox.new()
+        End
+
+        After all
+          call sandbox.dispose()
+        End
+
+        Before
+          call sandbox.return()
+        End
+
+        It executes process in a current working directory
+          call sandbox.visit('foo')
+          call sandbox.visit('bar')
+          let p = Process.start(Args('cwd.py'))
+          let [r, e] = Promise.wait(p, TIMEOUT)
+          Assert Equals(e, v:null)
+          Assert Equals(Dict.omit(r, ['args']), {
+                \ 'stdout': [sandbox.path('bar'), ''],
+                \ 'stderr': [''],
+                \ 'exitval': 0,
+                \})
+        End
+
+        It executes process in a given cwd
+          call sandbox.visit('foo')
+          call sandbox.visit('bar')
+          let p = Process.start(Args('cwd.py'), {
+                \ 'cwd': sandbox.path('foo'),
+                \})
+          let [r, e] = Promise.wait(p, TIMEOUT)
+          Assert Equals(e, v:null)
+          Assert Equals(Dict.omit(r, ['args']), {
+                \ 'stdout': [sandbox.path('foo'), ''],
+                \ 'stderr': [''],
+                \ 'exitval': 0,
+                \})
+        End
+      End
+    endif
+  End
+End

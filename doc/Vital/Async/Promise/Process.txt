@@ -1,0 +1,79 @@
+*Vital.Async.Promise.Process.txt*	System.Job wrapper with Promise
+
+Author:  Alisue <lambdalisue@hashnote.net>
+License: MIT license
+Support: Vim 8.0.0107 and above
+Support: Neovim 0.2.0 and above
+
+=============================================================================
+CONTENTS			*Vital.Async.Promise.Process-contents*
+
+Introduction			|Vital.Async.Promise.Process-introduction|
+Usage				|Vital.Async.Promise.Process-usage|
+Functions			|Vital.Async.Promise.Process-functions|
+
+
+=============================================================================
+INTRODUCTION			*Vital.Async.Promise.Process-introduction*
+
+*Vital.Async.Promise.Process* is a module to provide a way to execute an
+external program with a |Vital.Async.Promise| interface.
+
+It internally uses |Vital.System.Job| to execute a program so it works both
+on Vim and Neovim.
+
+Note that if intermediate data is necessary, see
+|Vital.Async.Observable.Process| instead.
+
+
+=============================================================================
+USAGE				*Vital.Async.Promise.Process-usage*
+
+Start an external program with |Vital.Async.Promise.Process.start()| function
+by appling command arguments like:
+>
+	call Process.start(['echo', 'Hello'])
+	      \.then({ v -> execute('echo v', '') })
+	"{
+	"  'args': ['echo', 'Hello'],
+	"  'stdout': ['Hello', ''],
+	"  'stderr': [''],
+	"  'exitval': 0,
+	"}
+<
+
+=============================================================================
+FUNCTIONS			*Vital.Async.Promise.Process-functions*
+
+.start({args}[, {options}])	*Vital.Async.Promise.Process.start()*
+
+	Execute a command {args} and return a Promise instance which will
+	be resolved when the process is terminated. Note that even the process
+	has terminated with non 0 exit-status, the promise is resolved rather
+	than rejected. The promise is rejected only when the process could not
+	be started (e.g. the given executable is not found).
+
+	The following attributes are available in {options}.
+
+	"cwd"		Force to execute a process in a given directory.
+			Otherwise the process is executed under a current
+			directory.
+	"raw"		TRUE to use raw data instead of \r removed data.
+	"stdin"		A Promise instance which resolve string or string list
+			to send messages into the process. When this promise
+			has resolved, the stdin channel will be closed.
+			Note that rejection value is not used.
+	"abort"		A Promise instance which is used to abort the process.
+			Note that rejection value is not used.
+
+	The promise instance will be resolved with an object which has the
+	following attributes.
+
+	"args"		Given arguments
+	"stdout"	Stdout of the process in newline separated list.
+	"stderr"	Stderr of the process in newline separated list.
+	"exitval"	Exit value of the process
+
+
+=============================================================================
+vim:tw=78:fo=tcq2mM:ts=8:ft=help:norl

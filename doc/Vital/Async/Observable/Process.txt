@@ -27,6 +27,9 @@ on Vim and Neovim.
 While it follows the Observable interface, the power of |Vital.Rx| module can
 be applied to manipulate the process.
 
+Note that if intermediate data is not necessary, see
+|Vital.Async.Promise.Process| instead.
+
 
 =============================================================================
 USAGE				*Vital.Async.Observable.Process-usage*
@@ -115,15 +118,6 @@ To normalize data like above, Process module provides original operators:
 	" 'Bye'
 <
 
-If you don't need intermediate status, use
-|Vital.Async.Promise.Process.start()| which return a |Vital.Async.Promise|
-instance:
->
-	call Process.start(['echo', 'Hello'])
-	      \.then({ v -> execute('echo v', '') })
-	" { 'pid': xxxxx, 'exitval': 0, 'stdout': ['Hello'], 'stderr': [] }
-<
-
 =============================================================================
 FUNCTIONS			*Vital.Async.Observable.Process-functions*
 
@@ -147,6 +141,8 @@ FUNCTIONS			*Vital.Async.Observable.Process-functions*
 	It throws an exception when called from non supported Vim/Neovim.
 
 .start({args}[, {options}])	*Vital.Async.Observable.Process.start()*
+
+	DEPRECATED: Use |Vital.Async.Promise.Process.start()|
 
 	Execute a command {args} and return a Promise instance which will
 	be resolved when the process is terminated.
