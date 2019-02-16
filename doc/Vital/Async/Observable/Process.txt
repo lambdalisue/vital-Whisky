@@ -1,4 +1,4 @@
-*Vital.Async.Process.txt*	System.Job wrapper which use Async.Observable
+*Vital.Async.Observable.Process.txt*	System.Job wrapper with Observable
 
 Author:  Alisue <lambdalisue@hashnote.net>
 License: MIT license
@@ -6,20 +6,20 @@ Support: Vim 8.0.0107 and above
 Support: Neovim 0.2.0 and above
 
 =============================================================================
-CONTENTS				*Vital.Async.Process-contents*
+CONTENTS			*Vital.Async.Observable.Process-contents*
 
-Introduction			|Vital.Async.Process-introduction|
-Usage				|Vital.Async.Process-usage|
-Functions			|Vital.Async.Process-functions|
-Emissions			|Vital.Async.Process-emissions|
-Operators			|Vital.Async.Process-operators|
+Introduction			|Vital.Async.Observable.Process-introduction|
+Usage				|Vital.Async.Observable.Process-usage|
+Functions			|Vital.Async.Observable.Process-functions|
+Emissions			|Vital.Async.Observable.Process-emissions|
+Operators			|Vital.Async.Observable.Process-operators|
 
 
 =============================================================================
-INTRODUCTION				*Vital.Async.Process-introduction*
+INTRODUCTION			*Vital.Async.Observable.Process-introduction*
 
-*Vital.Async.Process* is a module to provide a way to execute an external
-program with a |Vital.Async.Observable| interface.
+*Vital.Async.Observable.Process* is a module to provide a way to execute an
+external program with a |Vital.Async.Observable| interface.
 
 It internally uses |Vital.System.Job| to execute a program so it works both
 on Vim and Neovim.
@@ -29,12 +29,12 @@ be applied to manipulate the process.
 
 
 =============================================================================
-USAGE					*Vital.Async.Process-usage*
+USAGE				*Vital.Async.Observable.Process-usage*
 
-Create a Process instance by |Vital.Async.Process.new()| function by appling
-command arguments like:
+Create a Process instance by |Vital.Async.Observable.Process.new()| function
+by appling command arguments like:
 >
-	let Process = vital#{plugin}#import('Async.Process')
+	let Process = vital#{plugin}#import('Async.Observable.Process')
 	let p = Process.new(['echo', 'Hello'])
 <
 Then subscribe the instance to start the program
@@ -115,8 +115,9 @@ To normalize data like above, Process module provides original operators:
 	" 'Bye'
 <
 
-If you don't need intermediate status, use |Vital.Async.Process.start()|
-which return a |Vital.Async.Promise| instance:
+If you don't need intermediate status, use
+|Vital.Async.Promise.Process.start()| which return a |Vital.Async.Promise|
+instance:
 >
 	call Process.start(['echo', 'Hello'])
 	      \.then({ v -> execute('echo v', '') })
@@ -124,9 +125,9 @@ which return a |Vital.Async.Promise| instance:
 <
 
 =============================================================================
-FUNCTIONS				*Vital.Async.Process-functions*
+FUNCTIONS			*Vital.Async.Observable.Process-functions*
 
-.new({args}[, {options}])		*Vital.Async.Process.new()*
+.new({args}[, {options}])	*Vital.Async.Observable.Process.new()*
 
 	Create a new Process instance (Observable) which will execute a
 	command {args} when subscribed.
@@ -145,7 +146,7 @@ FUNCTIONS				*Vital.Async.Process-functions*
 
 	It throws an exception when called from non supported Vim/Neovim.
 
-.start({args}[, {options}])		*Vital.Async.Process.start()*
+.start({args}[, {options}])	*Vital.Async.Observable.Process.start()*
 
 	Execute a command {args} and return a Promise instance which will
 	be resolved when the process is terminated.
@@ -161,22 +162,22 @@ FUNCTIONS				*Vital.Async.Process-functions*
 	The promise instance will be resolved when exitval is 0, otherwise
 	it will be rejected.
 
-	See |Vital.Async.Process.new()| for available {options}.
+	See |Vital.Async.Observable.Process.new()| for available {options}.
 
 =============================================================================
-EMISSIONS				*Vital.Async.Process-emissions*
+EMISSIONS			*Vital.Async.Observable.Process-emissions*
 
 Once a Process instance is subscribed, the observer/subscriber will receive
 the following emissions
 
-next:pid			*Vital.Async.Process-emissions.next-pid*
+next:pid		*Vital.Async.Observable.Process-emissions.next-pid*
 
 	Received as a next event with {'pid': ...} which indicate the PID of
 	the process.
 	It will be emitted immediately after subscribing.
 
-next:stdout			*Vital.Async.Process-emissions.next-stdout*
-next:stderr			*Vital.Async.Process-emissions.next-stderr*
+next:stdout		*Vital.Async.Observable.Process-emissions.next-stdout*
+next:stderr		*Vital.Async.Observable.Process-emissions.next-stderr*
 
 	Received as a next event with {'stdout': [...]} or {'stderr': [...]}
 	which indicate the stdout/stderr data received.
@@ -185,27 +186,27 @@ next:stderr			*Vital.Async.Process-emissions.next-stderr*
 	to normalize the data to make complete data.
 
 	See also:
-	|Vital.Async.Process.operators.squash()|
-	|Vital.Async.Process.operators.stretch()|
+	|Vital.Async.Observable.Process.operators.squash()|
+	|Vital.Async.Observable.Process.operators.stretch()|
 
-error				*Vital.Async.Process-emissions.error*
+error			*Vital.Async.Observable.Process-emissions.error*
 
 	Receveid as an error event with exitval which indicate that the
 	process with some exception.
 
-complete			*Vital.Async.Process-emissions.complete*
+complete		*Vital.Async.Observable.Process-emissions.complete*
 
 	Receveid as a complete event which indicate that the process exit
 	successfully.
 
 
 =============================================================================
-OPERATORS				*Vital.Async.Process-operators*
+OPERATORS			*Vital.Async.Observable.Process-operators*
 
 Process module provides some original operators under .operators attribute
 to handle stdout/stderr.
 
-.focus({key})			*Vital.Async.Process.operators.focus()*
+.focus({key})		*Vital.Async.Observable.Process.operators.focus()*
 
 	Focus a given {key} of emissions in next events and emits emission
 	object which has only a given {key}.
@@ -217,7 +218,7 @@ to handle stdout/stderr.
 	1. focus does not support a nested property
 	2. focus does not flatten a property
 
-.squash({key})			*Vital.Async.Process.operators.squash()*
+.squash({key})		*Vital.Async.Observable.Process.operators.squash()*
 
 	Squash data of a given {key} of emissions in next events and emits
 	emission object with line blocks (list).
@@ -226,7 +227,7 @@ to handle stdout/stderr.
 	attribute. Use focus() operator to filter emissions.
 
 
-.stretch({key})			*Vital.Async.Process.operators.stretch()*
+.stretch({key})		*Vital.Async.Observable.Process.operators.stretch()*
 
 	Stretch data of a given {key} of emissions in next events and emits
 	emission object with a single line.
@@ -237,14 +238,14 @@ to handle stdout/stderr.
 	Note that stretching the original stdout/stderr data does not make
 	sense. Use squash() operator to make correct line blocks first.
 
-.pile({key})			*Vital.Async.Process.operators.pile()*
+.pile({key})		*Vital.Async.Observable.Process.operators.pile()*
 
 	Emits piles (line blocks) of each complete lines of a given {key} of
 	emissions in next events.
 
 	It is a combination operator equivalent to squash/pluck.
 
-.line({key})			*Vital.Async.Process.operators.line()*
+.line({key})		*Vital.Async.Observable.Process.operators.line()*
 
 	Emits complete lines of a given {key} of emissions in next events.
 

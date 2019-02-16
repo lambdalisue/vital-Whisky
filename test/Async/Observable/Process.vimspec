@@ -1,4 +1,4 @@
-Describe Async.Process
+Describe Async.Observable.Process
   Before all
     let TIMEOUT = (!empty($APPVEYOR) || !empty($TRAVIS)) ? 30000 : 5000
 
@@ -28,7 +28,7 @@ Describe Async.Process
   End
 
   Before
-    let Process = healthcheck#vital#import('Async.Process')
+    let Process = healthcheck#vital#import('Async.Observable.Process')
   End
 
   Describe .operators
