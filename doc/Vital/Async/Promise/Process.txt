@@ -75,5 +75,21 @@ FUNCTIONS			*Vital.Async.Promise.Process-functions*
 	"exitval"	Exit value of the process
 
 
+is_available()			*Vital.Async.Promise.Process.is_available()*
+
+	Returns TRUE when requirements for using
+	|Vital.Async.Promise.Process| are met.
+	Requirements is that |Vital.Async.Promise| and |Vital.System.Job|
+	work.
+	Otherwise, returns FALSE.
+>
+	  if Process.is_available()
+	    " Asynchronous operations using Process Promise
+	  else
+	    " Fallback into synchronous operations
+	  endif
+<
+
+
 =============================================================================
 vim:tw=78:fo=tcq2mM:ts=8:ft=help:norl

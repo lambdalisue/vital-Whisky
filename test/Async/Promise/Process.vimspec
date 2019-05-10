@@ -193,4 +193,35 @@ Describe Async.Promise.Process
       End
     endif
   End
+
+  Describe .is_available()
+    " This test check:
+    "  old version (non work)
+    "  tiny version (lambda/timer/job not support)
+    It support for vim
+      if has('patch-8.0.0107') && !has('nvim')
+        if has('lambda') && has('timers') && has('job')
+          Assert True(Process.is_available())
+        else
+          Assert False(Process.is_available())
+        endif
+      endif
+    End
+    It support for nvim
+      if has('nvim-0.2.0') && has('nvim')
+        " always support in nvim , has('job') non-checkable
+        Assert True(Process.is_available())
+      endif
+    End
+    It not support for vim
+      if !has('patch-8.0.0107') && !has('nvim')
+        Assert False(Process.is_available())
+      endif
+    End
+    It not support for nvim
+      if !has('nvim-0.2.0') && has('nvim')
+        Assert False(Process.is_available())
+      endif
+    End
+  End
 End
