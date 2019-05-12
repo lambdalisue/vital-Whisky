@@ -18,6 +18,13 @@ function! s:start(args, ...) abort
   return s:Promise.new(funcref('s:_executor', [a:args, options]))
 endfunction
 
+function! s:is_available() abort
+  if !has('patch-8.0.0107') && !has('nvim-0.2.0')
+    return 0
+  endif
+  return s:Promise.is_available() && s:Job.is_available()
+endfunction
+
 function! s:_executor(args, options, resolve, ...) abort
   let ns = {
         \ 'args': a:args,
