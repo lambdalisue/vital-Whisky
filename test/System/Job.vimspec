@@ -376,6 +376,15 @@ Describe System.Job
         call job1.wait(TIMEOUT)
         call job2.wait(TIMEOUT)
       End
+
+      It keeps equal PID even when a process exit
+        let job = Job.start(Args('never.py'), options)
+        let pid = job.pid()
+        call job.stop()
+        call job.wait(TIMEOUT)
+        Assert IsNumber(job.pid())
+        Assert Equals(job.pid(), pid)
+      End
     End
 
     Describe .status()
