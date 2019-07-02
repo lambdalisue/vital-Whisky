@@ -194,6 +194,8 @@ INSTANCE					*Vital.System.Job-instance*
 					*Vital.System.Job-instance.pid()*
 pid()
 	Return a process id.
+	It keeps returning a same process id even when the process has
+	terminated.
 
 					*Vital.System.Job-instance.status()*
 status()
