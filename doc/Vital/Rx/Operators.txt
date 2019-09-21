@@ -1,0 +1,75 @@
+*Vital/Rx/Operators.txt*	ReactiveX operators written in pure Vim script
+
+Author:  Alisue <lambdalisue@hashnote.net>
+License: MIT license
+Support: Vim 8.0.0000 and above
+Support: Neovim 0.2.0 and above
+
+
+=============================================================================
+CONTENTS			*Vital.Rx.Operators-content*
+
+INTRODUCTION			|Vital.Rx.Operators-introduction|
+FUNCTIONS			|Vital.Rx.Operators-functions|
+
+
+=============================================================================
+INTRODUCTION			*Vital.Rx.Operators-introduction*
+
+*Vital.Rx.Operators* is ReactiveX operatos written in pure Vim script.
+Use these operators with "pipe()" method of |Vital.Rx.Observable| instance
+like below:
+>
+	let s:Observable = vital#plugin#import('Rx.Observable')
+	let s:Operators = vital#plugin#import('Rx.Operators')
+
+	let p = s:Observable.new(...)
+	let p = p.pipe(
+	      \ s:Operators.take(2),
+	      \ s:Operators.map({ v -> v * 2 }),
+	      \ s:Operators.tap({ v -> execute('echomsg string(v)', '') })
+	      \)
+	call p.subscribe()
+<
+
+
+=============================================================================
+FUNCTIONS			*Vital.Rx.Operators-functions*
+
+It's just list. PR is really welcome.
+
+catch_error({project})
+contact_map({project})
+default_if_empty({default})
+delay({delay})
+every({fn})
+filter({fn})
+first([{predicate}, [{default}]])
+identity()
+ignore_elements()
+map({fn})
+merge_map({project}[, {concurrent}])
+multicast({subject})
+ref_count()
+reduce({fn}[, {accumulate}])
+publish()
+publish_behavior()
+publish_last()
+publish_replay()
+pluck({properties}...)
+scan({fn}[, {accumulate}])
+share()
+share_replay()
+skip({the})
+skip_until({notifier})
+start_with({items}...)
+switch_map({project})
+take({count})
+take_until({notifier})
+tap({sniffer})
+tap({next}[, {error}[, {complete}]])
+throw_if_empty([{factory}])
+timeout({due})
+
+=============================================================================
+vim:tw=78:fo=tcq2mM:ts=8:ft=help:norl
