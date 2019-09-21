@@ -37,7 +37,7 @@ if exists('*nvim_buf_set_lines')
   function! s:_replace(bufnr, start, end, replacement) abort
     try
       call nvim_buf_set_lines(a:bufnr, a:start, a:end, v:true, a:replacement)
-    catch /^Vim(call):Index out of bounds/
+    catch /^Vim(call):\%(E5555: API call: \)\?Index out of bounds/
       return 1
     endtry
   endfunction
