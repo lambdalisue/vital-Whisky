@@ -19,8 +19,12 @@ Describe Vim.Window
         let guard = Window.focus_window(2)
         Assert Same(guard, v:null)
 
-        let guard = Window.focus_window('#')
-        Assert Same(guard, v:null)
+        if !has('nvim-0.4.0')
+          " It seems Neovim v0.4.0 has an alternate file
+          " even for the initial file.
+          let guard = Window.focus_window('#')
+          Assert Same(guard, v:null)
+        endif
       End
 
       It returns v:null when no corresponding window of {expr} is found in a current tabpage
