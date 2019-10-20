@@ -72,7 +72,7 @@ system, mean that you may need to normalize "\r" which may appear on each
 end of line in Windows. See |Vital.System.Job-callbacks| for detail.
 
 -----------------------------------------------------------------------------
-CALLBACKS      					|Vital.System.Job-callbacks|
+CALLBACKS      					*Vital.System.Job-callbacks*
 
 "on_stdout" or "on_stderr" callbacks will be called with "data" argument
 which contains received data as a newline (\n) separated list.
@@ -230,7 +230,7 @@ stop()
 	Stop the process by sending SIGTERM. If the process does not
 	terminate after a timeout then SIGKILL will be sent.
 	Note that the above "timeout" is
-	
+
 	- 2000 ms in Vim (defined in System.Job.Vim)
 	- 2000 ms in Neovim (defined in src/nvim/event/process.c)
 
