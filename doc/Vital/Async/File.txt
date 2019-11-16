@@ -1,0 +1,80 @@
+*vital/Async/File.txt*		asynchronous filesystem utilities library.
+
+Author : Alisue <lambdalisue@hashnote.net>
+License: MIT license
+Support: Vim 8.0.0000 and above
+Support: Neovim 0.2.0 and above
+
+
+==============================================================================
+CONTENTS				*Vital.Async.File-contents*
+
+INTRODUCTION			|Vital.Async.File-introduction|
+INTERFACE			|Vital.Async.File-interface|
+  Functions			  |Vital.Async.File-functions|
+
+==============================================================================
+INTRODUCTION				*Vital.Async.File-introduction*
+
+*Vital.Async.File* is an asynchronous filesystem utilities library.
+It is asynchronous version of |Vital.System.File| with some additional
+functions.
+
+==============================================================================
+INTERFACE				*Vital.Async.File-interface*
+
+------------------------------------------------------------------------------
+FUNCTIONS				*Vital.Async.File-functions*
+
+is_open_supported()		*Vital.Async.File.is_open_supported()*
+	Returns TRUE if "open()" is supported in a current platform.
+
+is_move_supported()		*Vital.Async.File.is_move_supported()*
+	Returns TRUE if "move()" is supported in a current platform.
+
+is_copy_supported()		*Vital.Async.File.is_copy_supported()*
+	Returns TRUE if "copy()" is supported in a current platform.
+
+is_copy_dir_supported()		*Vital.Async.File.is_copy_dir_supported()*
+	Returns TRUE if "copy_dir()" is supported in a current platform.
+
+is_trash_supported()		*Vital.Async.File.is_trash_supported()*
+	Returns TRUE if "trash()" is supported in a current platform.
+
+open({expr})				*Vital.Async.File.open()*
+	Returns a promise to opens an {expr} by a system command.
+>
+	call s:F.open("/tmp/file")
+	      \.then({ -> execute('echo "opened"', '') })
+<
+
+move({src}, {dst})			*Vital.Async.File.move()*
+	Return a promise to move a {src} to {dst}.
+>
+	call s:F.move("/tmp/old", "/tmp/new")
+	      \.then({ -> execute('echo "moved"', '') })
+<
+
+copy({src}, {dst})			*Vital.Async.File.copy()*
+	Return a promise to copy a {src} file to {dst}. 
+	Use |Vital.Async.File.copy_dir()| to copy a directory.
+>
+	call s:F.copy("/tmp/file.old", "/tmp/file.new")
+	      \.then({ -> execute('echo "copied"', '') })
+<
+copy_dir({src}, {dst})			*Vital.Async.File.copy_dir()*
+	Return a promise to copy a {src} directory to {dst}. 
+	Use |Vital.Async.File.copy()| to copy a file.
+>
+	call s:F.copy_dir("/tmp/old", "/tmp/new")
+	      \.then({ -> execute('echo "copied"', '') })
+<
+trash({path})			*Vital.Async.File.copy_dir()*
+	Return a promise to move {path} into a system trash.
+>
+	call s:F.trash("/tmp/file")
+	      \.then({ -> execute('echo "trashed"', '') })
+<
+
+==============================================================================
+vim:tw=78:fo=tcq2mM:ts=8:ft=help:norl
