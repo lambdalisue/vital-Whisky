@@ -41,40 +41,57 @@ is_copy_dir_supported()		*Vital.Async.File.is_copy_dir_supported()*
 is_trash_supported()		*Vital.Async.File.is_trash_supported()*
 	Returns TRUE if "trash()" is supported in a current platform.
 
-open({expr})				*Vital.Async.File.open()*
+open({expr}[, {options}])			*Vital.Async.File.open()*
 	Returns a promise to opens an {expr} by a system command.
 >
 	call s:F.open("/tmp/file")
 	      \.then({ -> execute('echo "opened"', '') })
 <
+	The {options} is passed to |Vital.Async.Promise.Process.start()|.
+	So to cancel the operation, assign |Vital.Async.CancellationToken|
+	to {options.token}.
 
-move({src}, {dst})			*Vital.Async.File.move()*
+move({src}, {dst}[, {options}])			*Vital.Async.File.move()*
 	Return a promise to move a {src} to {dst}.
 >
 	call s:F.move("/tmp/old", "/tmp/new")
 	      \.then({ -> execute('echo "moved"', '') })
 <
+	The {options} is passed to |Vital.Async.Promise.Process.start()|.
+	So to cancel the operation, assign |Vital.Async.CancellationToken|
+	to {options.token}.
 
-copy({src}, {dst})			*Vital.Async.File.copy()*
+copy({src}, {dst}[, {options}])			*Vital.Async.File.copy()*
 	Return a promise to copy a {src} file to {dst}. 
 	Use |Vital.Async.File.copy_dir()| to copy a directory.
 >
 	call s:F.copy("/tmp/file.old", "/tmp/file.new")
 	      \.then({ -> execute('echo "copied"', '') })
 <
-copy_dir({src}, {dst})			*Vital.Async.File.copy_dir()*
+	The {options} is passed to |Vital.Async.Promise.Process.start()|.
+	So to cancel the operation, assign |Vital.Async.CancellationToken|
+	to {options.token}.
+
+copy_dir({src}, {dst}[, {options}])		*Vital.Async.File.copy_dir()*
 	Return a promise to copy a {src} directory to {dst}. 
 	Use |Vital.Async.File.copy()| to copy a file.
 >
 	call s:F.copy_dir("/tmp/old", "/tmp/new")
 	      \.then({ -> execute('echo "copied"', '') })
 <
-trash({path})			*Vital.Async.File.copy_dir()*
+	The {options} is passed to |Vital.Async.Promise.Process.start()|.
+	So to cancel the operation, assign |Vital.Async.CancellationToken|
+	to {options.token}.
+
+trash({path}[, {options}])			*Vital.Async.File.copy_dir()*
 	Return a promise to move {path} into a system trash.
 >
 	call s:F.trash("/tmp/file")
 	      \.then({ -> execute('echo "trashed"', '') })
 <
+	The {options} is passed to |Vital.Async.Promise.Process.start()|.
+	So to cancel the operation, assign |Vital.Async.CancellationToken|
+	to {options.token}.
 
 ==============================================================================
 vim:tw=78:fo=tcq2mM:ts=8:ft=help:norl
