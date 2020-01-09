@@ -1,0 +1,241 @@
+Describe Lambda
+  Before
+    let Lambda = vital#vital#import('Lambda')
+  End
+
+  Describe .void()
+    It returns 0
+      Assert Equals(Lambda.void(), 0)
+    End
+
+    It accept any number of arguments
+      call Lambda.void()
+      call Lambda.void(0)
+      call Lambda.void(0, 1)
+      call Lambda.void(0, 1, 2)
+      call Lambda.void(0, 1, 2, 3)
+      call Lambda.void(0, 1, 2, 3, 4)
+    End
+  End
+
+  Describe .pass()
+    It returns first argument
+      Assert Equals(Lambda.pass(0), 0)
+      Assert Equals(Lambda.pass(1), 1)
+      Assert Equals(Lambda.pass(2), 2)
+    End
+
+    It accept any number of arguments
+      Assert Equals(Lambda.pass(2), 2)
+      Assert Equals(Lambda.pass(2, 0), 2)
+      Assert Equals(Lambda.pass(2, 0, 1), 2)
+      Assert Equals(Lambda.pass(2, 0, 1, 2), 2)
+      Assert Equals(Lambda.pass(2, 0, 1, 2, 3), 2)
+    End
+  End
+
+  Describe .let()
+    It adds {key} as {value} in {object}
+      let n = {}
+      call Lambda.let(n, 'foo', 'bar')
+      Assert Equals(n, {'foo': 'bar'})
+
+      call Lambda.let(n, 'bar', 'hoge')
+      Assert Equals(n, {'foo': 'bar', 'bar': 'hoge'})
+    End
+
+    It replaces existing {key} as {value} in {object}
+      let n = {'foo': 'bar'}
+      call Lambda.let(n, 'foo', 'hoge')
+      Assert Equals(n, {'foo': 'hoge'})
+    End
+  End
+
+  Describe .unlet()
+    It removes {key} from {object}
+      let n = {'foo': 'bar'}
+      call Lambda.unlet(n, 'foo')
+      Assert Equals(n, {})
+    End
+
+    It throws E716 if {key} is missing from {object}
+      let n = {'foo': 'bar'}
+      Throws /E716:/ Lambda.unlet(n, 'bar')
+    End
+
+    It does nothing if {key} is missing from {object} when {force}
+      let n = {'foo': 'bar'}
+      call Lambda.unlet(n, 'bar', 1)
+      Assert Equals(n, {'foo': 'bar'})
+    End
+  End
+
+  Describe .throw()
+    It throws an exception given
+      Throws /special exception message/ Lambda.throw('special exception message')
+    End
+  End
+
+  Describe .echo()
+    It echos a given message
+      let captured = execute("call Lambda.echo('hello')")
+      Assert Equals(captured, "\nhello")
+    End
+  End
+
+  Describe .echomsg()
+    It echos a given message
+      let captured = execute("call Lambda.echomsg('hello')")
+      Assert Equals(captured, "\nhello")
+    End
+  End
+
+  Describe .if()
+    It returns execution result of {true} when {condition} is true
+      let result = Lambda.if(0 is# 0, { -> 'Hello' })
+      Assert Equals(result, 'Hello')
+    End
+
+    It returns 0 when {condition} is false
+      let result = Lambda.if(0 is# 1, { -> 'Hello' })
+      Assert Equals(result, 0)
+    End
+
+    It returns execution result of {false} when {condition} is false
+      let result = Lambda.if(0 is# 1, { -> 'Hello' }, { -> 'World' })
+      Assert Equals(result, 'World')
+    End
+  End
+
+  Describe .map()
+    It returns a {fn} applied copies of {list}
+      let list = [5, 4, 3, 2, 1]
+
+      " The first argument is value
+      let copy = Lambda.map(list, { v -> v + 1 })
+      Assert Equals(list, [5, 4, 3, 2, 1])
+      Assert Equals(copy, [6, 5, 4, 3, 2])
+
+      " The second argument is index
+      let copy = Lambda.map(list, { _, k -> k + 1 })
+      Assert Equals(list, [5, 4, 3, 2, 1])
+      Assert Equals(copy, [1, 2, 3, 4, 5])
+    End
+  End
+
+  Describe .filter()
+    It returns copies of {list} filtered by {fn}
+      let list = [5, 4, 3, 2, 1]
+
+      " The first argument is value
+      let copy = Lambda.filter(list, { v -> v % 2 is# 0 })
+      Assert Equals(list, [5, 4, 3, 2, 1])
+      Assert Equals(copy, [4, 2])
+
+      " The second argument is index
+      let copy = Lambda.filter(list, { _, k -> k % 2 is# 0 })
+      Assert Equals(list, [5, 4, 3, 2, 1])
+      Assert Equals(copy, [5, 3, 1])
+    End
+  End
+
+  Describe .reduce()
+    It returns a reduced value for {fn} applied copies of {list}
+      let list = [5, 4, 3, 2, 1]
+
+      " The second argument is value
+      let value = Lambda.reduce(list, { a, v -> a + v }, 0)
+      Assert Equals(list, [5, 4, 3, 2, 1])
+      Assert Equals(value, 15)
+
+      " The thrid argument is index
+      let value = Lambda.reduce(list, { a, _, k -> a + k }, 0)
+      Assert Equals(list, [5, 4, 3, 2, 1])
+      Assert Equals(value, 10)
+    End
+
+    It returns a reduced value for {fn} applied copies of {list} (without init)
+      let list = [5, 4, 3, 2, 1]
+
+      " The second argument is value
+      let value = Lambda.reduce(list, { a, v -> a + v })
+      Assert Equals(list, [5, 4, 3, 2, 1])
+      Assert Equals(value, 15)
+
+      " The thrid argument is index
+      let value = Lambda.reduce(list, { a, _, k -> a + k })
+      Assert Equals(list, [5, 4, 3, 2, 1])
+      Assert Equals(value, 15)
+    End
+  End
+
+  Describe .map_f()
+    It returns a function which execute map on the list
+      let list = [5, 4, 3, 2, 1]
+
+      " The first argument is value
+      let F = Lambda.map_f({ v -> v + 1 })
+      let copy = F(list)
+      Assert Equals(list, [5, 4, 3, 2, 1])
+      Assert Equals(copy, [6, 5, 4, 3, 2])
+
+      " The second argument is index
+      let F = Lambda.map_f({ _, k -> k + 1 })
+      let copy = F(list)
+      Assert Equals(list, [5, 4, 3, 2, 1])
+      Assert Equals(copy, [1, 2, 3, 4, 5])
+    End
+  End
+
+  Describe .filter_f()
+    It returns a function which execute filter on the list
+      let list = [5, 4, 3, 2, 1]
+
+      " The first argument is value
+      let F = Lambda.filter_f({ v -> v % 2 is# 0 })
+      let copy = F(list)
+      Assert Equals(list, [5, 4, 3, 2, 1])
+      Assert Equals(copy, [4, 2])
+
+      " The second argument is index
+      let F = Lambda.filter_f({ _, k -> k % 2 is# 0 })
+      let copy = F(list)
+      Assert Equals(list, [5, 4, 3, 2, 1])
+      Assert Equals(copy, [5, 3, 1])
+    End
+  End
+
+  Describe .reduce()
+    It returns a function which execute reduce on the list
+      let list = [5, 4, 3, 2, 1]
+
+      " The second argument is value
+      let F = Lambda.reduce_f({ a, v -> a + v }, 0)
+      let value = F(list)
+      Assert Equals(list, [5, 4, 3, 2, 1])
+      Assert Equals(value, 15)
+
+      " The thrid argument is index
+      let F = Lambda.reduce_f({ a, _, k -> a + k }, 0)
+      let value = F(list)
+      Assert Equals(list, [5, 4, 3, 2, 1])
+      Assert Equals(value, 10)
+    End
+
+    It returns a function which execute reduce on the list (without init)
+      let list = [5, 4, 3, 2, 1]
+
+      " The second argument is value
+      let F = Lambda.reduce_f({ a, v -> a + v })
+      let value = F(list)
+      Assert Equals(list, [5, 4, 3, 2, 1])
+      Assert Equals(value, 15)
+
+      " The thrid argument is index
+      let F = Lambda.reduce_f({ a, _, k -> a + k })
+      let value = F(list)
+      Assert Equals(list, [5, 4, 3, 2, 1])
+      Assert Equals(value, 15)
+    End
+  End
+End
