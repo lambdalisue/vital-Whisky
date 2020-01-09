@@ -63,8 +63,11 @@ FUNCTIONS			*Vital.Async.Promise.Process-functions*
 			to send messages into the process. When this promise
 			has resolved, the stdin channel will be closed.
 			Note that rejection value is not used.
+	"token"		An instance of |Vital.Async.CancellationToken| to
+			cancel process execution.
 	"abort"		A Promise instance which is used to abort the process.
 			Note that rejection value is not used.
+			WARNING deprecated.
 
 	The promise instance will be resolved with an object which has the
 	following attributes.
