@@ -1,0 +1,64 @@
+*Vital/Async/Lambda.txt*	Async function collection for lambda function
+
+Author : Alisue <lambdalisue@hashnote.net>
+License: MIT license
+
+
+==============================================================================
+CONTENTS				*Vital.Async.Lambda-contents*
+
+FUNCTION			|Vital.Async.Lambda-function|
+
+
+=============================================================================
+FUNCTION 				*Vital.Async.Lambda-function*
+
+						*Vital.Async.Lambda.map()*
+map({list}, {fn})
+	It returns a promise which is resolved to a copies of {fn} applied
+	{list}.
+	Note that the order of argument for {fn} is inverted compared to the
+	|map()| function to keep the order among map, filter, and reduce.
+>
+	let list = [5, 4, 3, 2, 1]
+	call s:Lambda.map(list, { v -> v + 1 })
+	      \.then({ v -> execute("echo v", "") })
+	" -> [6, 5, 4, 3, 2]
+<
+						*Vital.Async.Lambda.filter()*
+filter({list}, {fn})
+	It returns a promise which is resolved to a copies of {list} filtered
+	by {fn}.
+	Note that the order of argument for {fn} is inverted compared to the
+	|filter()| function to keep the order among map, filter, and reduce.
+>
+	let list = [5, 4, 3, 2, 1]
+	echo s:Lambda.filter(list, { v -> v % 2 is# 0 })
+	      \.then({ v -> execute("echo v", "") })
+	" -> [4, 2]
+<
+						*Vital.Async.Lambda.reduce()*
+reduce({list}, {fn}, {init})
+	It returns a promise which is resolved to an accumulated value of
+	{list} accumulated by {fn}.
+>
+	let list = [5, 4, 3, 2, 1]
+	echo s:Lambda.reduce(list, { a, v -> a + v })
+	      \.then({ v -> execute("echo v", "") })
+	" -> 15
+<
+					*Vital.Async.Lambda.map_f()*
+map_f({fn})
+	It returns a function to map a first argument with given {fn}.
+
+					*Vital.Async.Lambda.filter_f()*
+filter_f({fn})
+	It returns a function to filter a first argument with given {fn}.
+
+					*Vital.Async.Lambda.reduce_f()*
+reduce_f({fn}[, {init}])
+	It returns a function to reduce a first argument with given {fn} and.
+	{init}.
+
+==============================================================================
+vim:tw=78:fo=tcq2mM:ts=8:ft=help:norl
