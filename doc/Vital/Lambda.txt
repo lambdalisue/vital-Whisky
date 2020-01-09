@@ -1,0 +1,145 @@
+*Vital/Lambda.txt*		Function collection for lambda function
+
+Author : Alisue <lambdalisue@hashnote.net>
+License: MIT license
+
+
+==============================================================================
+CONTENTS				*Vital.Lambda-contents*
+
+FUNCTION			|Vital.Lambda-function|
+
+
+=============================================================================
+FUNCTION 				*Vital.Lambda-function*
+
+						*Vital.Lambda.void()*
+void([{args}...])
+	The function itself does nothing. It is used to invoke multiple
+	expression in a single expression.
+>
+	" Invoke A, B, C in a single lambda function
+	let F = { -> s:Lambda.void(A(), B(), C()) }
+	echo F()
+	" -> 0
+<
+						*Vital.Lambda.pass()*
+pass({value}[, {args}...])
+	It is like |Vital.Lambda.void()| but it always returns {value}.
+>
+	" Invoke A, B, C in a single lambda function
+	let F = { -> s:Lambda.pass(v:null, A(), B(), C()) }
+	echo F()
+	" -> v:null
+<
+						*Vital.Lambda.let()*
+let({object}, {key}, {value})
+	It executes |let| command; assigns {key} as {value} to {object}.
+>
+	let obj = {}
+	call s:Lambda.let(obj, 'foo', 'bar')
+	echo obj
+	" -> { 'foo': 'bar' }
+<
+						*Vital.Lambda.unlet()*
+unlet({object}, {key}[, {force}])
+	It executes |unlet| command; removes {key} from {object}.
+	It does not throw exception for missing {key} if {force} is 1.
+>
+	let obj = {'foo': 'bar'}
+	call s:Lambda.unlet(obj, 'foo')
+	echo obj
+	" -> {}
+<
+						*Vital.Lambda.throw()*
+throw({message})
+	It executes |throw| command; throws {message} exception.
+>
+	call s:Lambda.throw('hello world')
+	" Error: 'hello world'
+<
+						*Vital.Lambda.echo()*
+echo({message})
+	It executes |echo| command; echos {message}.
+>
+	call s:Lambda.echo('hello world')
+	" -> 'hello world'
+<
+						*Vital.Lambda.echomsg()*
+echomsg({message})
+	It executes |echomsg| command; echos {message}.
+>
+	call s:Lambda.echomsg('hello world')
+	" -> 'hello world'
+<
+						*Vital.Lambda.if()*
+if({condition}, {true}[, {false}])
+	It returns an execution result of {true} function if {condition} is
+	TRUE. Otherwise it returns an execution result of {false} or 0 if
+	{false} is not specified.
+>
+	echo s:Lambda.if(0 is# 0, { -> 'yes' })
+	" -> 'yes'
+	echo s:Lambda.if(0 is# 1, { -> 'yes' })
+	" -> 0
+	echo s:Lambda.if(0 is# 1, { -> 'yes' }, { -> 'no' })
+	" -> 'no'
+<
+						*Vital.Lambda.map()*
+map({list}, {fn})
+	It returns a copies of {fn} applied {list}.
+	Note that the order of argument for {fn} is inverted compared to the
+	|map()| function to keep the order among map, filter, and reduce.
+>
+	let list = [5, 4, 3, 2, 1]
+	echo s:Lambda.map(list, { v -> v + 1 })
+	" -> [6, 5, 4, 3, 2]
+	echo list
+	" -> [5, 4, 3, 2, 1]
+	echo s:Lambda.map(list, { _, k -> k + 1 })
+	" -> [1, 2, 3, 4, 5]
+<
+						*Vital.Lambda.filter()*
+filter({list}, {fn})
+	It returns a copies of {list} filtered by {fn}.
+	Note that the order of argument for {fn} is inverted compared to the
+	|filter()| function to keep the order among map, filter, and reduce.
+>
+	let list = [5, 4, 3, 2, 1]
+	echo s:Lambda.filter(list, { v -> v % 2 is# 0 })
+	" -> [4, 2]
+	echo list
+	" -> [5, 4, 3, 2, 1]
+	echo s:Lambda.filter(list, { _, k -> k % 2 is# 0 })
+	" -> [5, 3, 1]
+<
+						*Vital.Lambda.reduce()*
+reduce({list}, {fn}[, {init}])
+	It returns an accumulated value of {list} accumulated by {fn}.
+	Note that if {init} is missing, the first value of {list} is used
+	as an initial value instead.
+>
+	let list = [5, 4, 3, 2, 1]
+	echo s:Lambda.reduce(list, { a, v -> a + v })
+	" -> 15
+	echo list
+	" -> [5, 4, 3, 2, 1]
+
+	echo s:Lambda.reduce(list, { a, v -> a + v }, 5)
+	" -> 20
+<
+						*Vital.Lambda.map_f()*
+map_f({fn})
+	It returns a function to map a first argument with given {fn}.
+
+						*Vital.Lambda.filter_f()*
+filter_f({fn})
+	It returns a function to filter a first argument with given {fn}.
+
+						*Vital.Lambda.reduce_f()*
+reduce_f({fn}[, {init}])
+	It returns a function to reduce a first argument with given {fn} and.
+	{init}.
+
+==============================================================================
+vim:tw=78:fo=tcq2mM:ts=8:ft=help:norl
