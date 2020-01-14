@@ -62,7 +62,7 @@ move({src}, {dst}[, {options}])			*Vital.Async.File.move()*
 	to {options.token}.
 
 copy({src}, {dst}[, {options}])			*Vital.Async.File.copy()*
-	Return a promise to copy a {src} file to {dst}. 
+	Return a promise to copy a {src} file to {dst}.
 	Use |Vital.Async.File.copy_dir()| to copy a directory.
 >
 	call s:F.copy("/tmp/file.old", "/tmp/file.new")
@@ -73,7 +73,7 @@ copy({src}, {dst}[, {options}])			*Vital.Async.File.copy()*
 	to {options.token}.
 
 copy_dir({src}, {dst}[, {options}])		*Vital.Async.File.copy_dir()*
-	Return a promise to copy a {src} directory to {dst}. 
+	Return a promise to copy a {src} directory to {dst}.
 	Use |Vital.Async.File.copy()| to copy a file.
 >
 	call s:F.copy_dir("/tmp/old", "/tmp/new")
@@ -83,7 +83,7 @@ copy_dir({src}, {dst}[, {options}])		*Vital.Async.File.copy_dir()*
 	So to cancel the operation, assign |Vital.Async.CancellationToken|
 	to {options.token}.
 
-trash({path}[, {options}])			*Vital.Async.File.copy_dir()*
+trash({path}[, {options}])			*Vital.Async.File.trash()*
 	Return a promise to move {path} into a system trash.
 >
 	call s:F.trash("/tmp/file")
