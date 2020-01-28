@@ -1,0 +1,47 @@
+*Vital/Prompt.txt*					Prompt vital module
+
+Author : Alisue <lambdalisue@hashnote.net>
+License: MIT license
+
+
+==============================================================================
+CONTENTS				*Vital.Prompt-contents*
+
+FUNCTION			|Vital.Prompt-function|
+
+
+=============================================================================
+FUNCTION 				*Vital.Prompt-function*
+
+						*Vital.Prompt.input()*
+input({prompt}[, {text}[, {comp}[, {default}]]])
+	An |input()| which returns the {default} (default: |v:null|) instead
+	when user cancelled the input by <Esc>.
+	Note that the function allows |Funcref| which is used for 'customlist'
+	to the {comp}.
+
+						*Vital.Prompt.ask()*
+ask({prompt}[, {text}[, {comp}[, {default}]]])
+	Ask a question ({prompt}) to user and return the result.
+
+	It invokes |inputsave()| and |inputrestore()| automatically to make
+	the function safe in mapping.
+
+						*Vital.Prompt.confirm()*
+confirm({prompt}[, {default}])
+	Ask a yes/no question ({prompt}) to user and return 1/0.
+
+	It invokes |inputsave()| and |inputrestore()| automatically to make
+	the function safe in mapping.
+						*Vital.Prompt.select()*
+select({prompt}[, {max}[, {min}[, {pattern}]]])
+	Select an answer from {promt} and return |String|.
+
+	A value has limited to the {pattern} (default: '\d') and the length of
+	the string has limited by {max} (default: 1) and {min} (default: 1).
+
+	It invokes |inputsave()| and |inputrestore()| automatically to make
+	the function safe in mapping.
+
+==============================================================================
+vim:tw=78:fo=tcq2mM:ts=8:ft=help:norl
