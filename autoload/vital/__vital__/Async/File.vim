@@ -137,7 +137,7 @@ endif
 
 " copy()
 if has('win32') && executable('cmd')
-  function! s:is_copy_dir_supported() abort
+  function! s:is_copy_supported() abort
     return 1
   endfunction
   function! s:copy(src, dst, ...) abort
@@ -154,7 +154,7 @@ if has('win32') && executable('cmd')
           \.catch({ e -> s:_iconv_result(e) })
   endfunction
 elseif executable('cp')
-  function! s:is_copy_dir_supported() abort
+  function! s:is_copy_supported() abort
     return 1
   endfunction
   function! s:copy(src, dst, ...) abort
@@ -164,7 +164,7 @@ elseif executable('cp')
           \], options)
   endfunction
 else
-  function! s:is_copy_dir_supported() abort
+  function! s:is_copy_supported() abort
     return 0
   endfunction
   function! s:copy(src, dst, ...) abort
