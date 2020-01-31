@@ -1,8 +1,12 @@
-vital-Whisky
-==============================================================================
-[![Codecov](https://img.shields.io/codecov/c/github/lambdalisue/vital-Whisky/master.svg?style=flat-square)](https://codecov.io/gh/lambdalisue/vital-Whisky)
-[![Travis CI](https://img.shields.io/travis/lambdalisue/vital-Whisky/master.svg?style=flat-square&label=Travis%20CI)](https://travis-ci.org/lambdalisue/vital-Whisky)
-[![AppVeyor](https://img.shields.io/appveyor/ci/lambdalisue/vital-Whisky/master.svg?style=flat-square&label=AppVeyor)](https://ci.appveyor.com/project/lambdalisue/vital-Whisky/branch/master)
+# vital-Whisky
+
 [![MIT License](https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square)](LICENSE.md)
+
+[![Actions Status](https://github.com/lambdalisue/vital-Whisky/workflows/reviewdog/badge.svg)](https://github.com/lambdalisue/vital-Whisky/actions)
+[![Actions Status](https://github.com/lambdalisue/vital-Whisky/workflows/linux_vim/badge.svg)](https://github.com/lambdalisue/vital-Whisky/actions)
+[![Actions Status](https://github.com/lambdalisue/vital-Whisky/workflows/linux_neovim/badge.svg)](https://github.com/lambdalisue/vital-Whisky/actions)
+[![Actions Status](https://github.com/lambdalisue/vital-Whisky/workflows/windows_vim/badge.svg)](https://github.com/lambdalisue/vital-Whisky/actions)
+[![Actions Status](https://github.com/lambdalisue/vital-Whisky/workflows/windows_neovim/badge.svg)](https://github.com/lambdalisue/vital-Whisky/actions)
+[![Actions Status](https://github.com/lambdalisue/vital-Whisky/workflows/mac_neovim/badge.svg)](https://github.com/lambdalisue/vital-Whisky/actions)
 
 [vital.vim](https://github.com/vim-jp/vital.vim) external module collection.
