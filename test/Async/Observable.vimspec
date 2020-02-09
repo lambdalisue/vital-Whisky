@@ -438,12 +438,24 @@ Describe Async.Observable
           if a:o.closed()
             return
           endif
-          let timers = [
-                \ timer_start(0, { -> a:o.next(1) }),
-                \ timer_start(50, { -> a:o.next(2) }),
-                \ timer_start(100, { -> a:o.next(3) }),
-                \ timer_start(150, { -> a:o.complete() }),
-                \]
+          if !has('nvim') && has('mac')
+            " XXX
+            " It seems 'timer_start' in MacVim 8.2 is quite unstable.
+            " https://github.com/lambdalisue/vital-Whisky/runs/435185040?check_suite_focus=true
+            let timers = [
+                  \ timer_start(0, { -> a:o.next(1) }),
+                  \ timer_start(100, { -> a:o.next(2) }),
+                  \ timer_start(300, { -> a:o.next(3) }),
+                  \ timer_start(500, { -> a:o.complete() }),
+                  \]
+          else
+            let timers = [
+                  \ timer_start(0, { -> a:o.next(1) }),
+                  \ timer_start(50, { -> a:o.next(2) }),
+                  \ timer_start(100, { -> a:o.next(3) }),
+                  \ timer_start(150, { -> a:o.complete() }),
+                  \]
+          endif
           return { -> map(timers, { -> timer_stop(v:val) }) }
         endfunction
 

@@ -479,6 +479,12 @@ Describe Async.Observable.Process
     End
 
     Context next:stdout event
+      Before
+        if !has('nvim') && has('mac')
+          Skip 'Tests on Vim in Github Actions macOS were too fragile so skip'
+        endif
+      End
+
       It emits {'stdout': ...} when the process flush the stdout stream (CR)
         let b = BufferObserver()
         let p = Process.new(Args('echo.py', '--out', 'stdout', '--newline', "\r"))
@@ -529,6 +535,12 @@ Describe Async.Observable.Process
     End
 
     Context next:stderr event
+      Before
+        if !has('nvim') && has('mac')
+          Skip 'Tests on Vim in Github Actions macOS were too fragile so skip'
+        endif
+      End
+
       It emits {'stderr': ...} when the process flush the stderr stream (CR)
         let b = BufferObserver()
         let p = Process.new(Args('echo.py', '--out', 'stderr', '--newline', "\r"))
@@ -649,6 +661,12 @@ Describe Async.Observable.Process
     endif
 
     Context raw option
+      Before
+        if !has('nvim') && has('mac')
+          Skip 'Tests on Vim in Github Actions macOS were too fragile so skip'
+        endif
+      End
+
       Context next:stdout event
         It emits raw {'stdout': ...} when the process flush the stdout stream (LF)
           let b = BufferObserver()
@@ -751,6 +769,12 @@ Describe Async.Observable.Process
     End
 
     Context stdin option
+      Before
+        if !has('nvim') && has('mac')
+          Skip 'Tests on Vim in Github Actions macOS were too fragile so skip'
+        endif
+      End
+
       It sends given data to the process through stdin list (string)
         let b = BufferObserver()
         let p = Process.new(Args('reply.py'), {
