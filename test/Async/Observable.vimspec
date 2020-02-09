@@ -373,7 +373,7 @@ Describe Async.Observable
 
         let b = BufferObserver()
         let s = Observable.new(funcref('Subscriber')).subscribe(b)
-        sleep 10m
+        sleep 100m
         Assert Equals(b.results, ['n:1', 'n:2', 'n:3'])
       End
 
