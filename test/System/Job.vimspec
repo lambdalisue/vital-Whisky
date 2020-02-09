@@ -1,6 +1,6 @@
 Describe System.Job
   Before all
-    let TIMEOUT = (!empty($APPVEYOR) || !empty($TRAVIS)) ? 30000 : 5000
+    let TIMEOUT = (!empty($CI)) ? 30000 : 5000
 
     let Path = vital#vital#import('System.Filepath')
     let Sandbox = vital#vital#import('System.Sandbox')

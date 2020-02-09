@@ -1,6 +1,6 @@
 Describe Async.Observable
   Before all
-    let TIMEOUT = (!empty($APPVEYOR) || !empty($TRAVIS)) ? 5000 : 500
+    let TIMEOUT = !empty($CI) ? 5000 : 500
 
     let Later = vital#vital#import('Async.Later')
     let Promise = vital#vital#import('Async.Promise')
@@ -199,7 +199,7 @@ Describe Async.Observable
       " Interval   ^-----------------------^
       " Complete   ------------------------|
       " Time [ms]      100  200  300  400  500
-      if !empty($APPVEYOR) || !empty($TRAVIS)
+      if !empty($CI)
         let ts = [1000, 5000, 10000]
       else
         let ts = [100, 500, 1000]
@@ -222,7 +222,7 @@ Describe Async.Observable
       " Interval   ^--------^---------^
       " Complete   -------------------|
       " Time [ms]      100  200  300  400
-      if !empty($APPVEYOR) || !empty($TRAVIS)
+      if !empty($CI)
         let ts = [3000, 2000, 10000]
       else
         let ts = [300, 200, 1000]
