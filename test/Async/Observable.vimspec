@@ -16,7 +16,7 @@ Describe Async.Observable
   End
 
   Before
-    let Observable = healthcheck#vital#import('Async.Observable')
+    let Observable = vital#vital#import('Async.Observable')
     set verbose=1
   End
 

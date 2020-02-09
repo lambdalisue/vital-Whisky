@@ -1,6 +1,6 @@
 Describe Data.List.Chunker
   Before
-    let Chunker = healthcheck#vital#import('Data.List.Chunker')
+    let Chunker = vital#vital#import('Data.List.Chunker')
   End
 
   Describe .new()

@@ -28,7 +28,7 @@ Describe Async.Observable.Process
   End
 
   Before
-    let Process = healthcheck#vital#import('Async.Observable.Process')
+    let Process = vital#vital#import('Async.Observable.Process')
   End
 
   Describe .operators

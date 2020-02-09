@@ -17,7 +17,7 @@ Describe Async.Promise.Process
   End
 
   Before
-    let Process = healthcheck#vital#import('Async.Promise.Process')
+    let Process = vital#vital#import('Async.Promise.Process')
   End
 
   Describe .start()

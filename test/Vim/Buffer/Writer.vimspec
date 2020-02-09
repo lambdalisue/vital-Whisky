@@ -19,7 +19,7 @@ Describe Vim.Buffer.Writer
   End
 
   Before
-    let Writer = healthcheck#vital#import('Vim.Buffer.Writer')
+    let Writer = vital#vital#import('Vim.Buffer.Writer')
     silent %bwipeout!
   End
 

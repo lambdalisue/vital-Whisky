@@ -30,7 +30,7 @@ Describe System.Job
   End
 
   Before
-    let Job = healthcheck#vital#import('System.Job')
+    let Job = vital#vital#import('System.Job')
     let options = {
           \ 'on_stdout': { -> 0 },
           \ 'on_stderr': funcref('OnStderr'),

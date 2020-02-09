@@ -1,6 +1,6 @@
 Describe App.Spinner
   Before
-    let Spinner = healthcheck#vital#import('App.Spinner')
+    let Spinner = vital#vital#import('App.Spinner')
   End
 
   It exposes builtin spinner frames

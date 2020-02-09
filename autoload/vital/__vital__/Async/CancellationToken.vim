@@ -25,14 +25,6 @@ function! s:_vital_created(module) abort
   lockvar 3 a:module
 endfunction
 
-function! s:_vital_healthcheck() abort
-  if (v:version >= 800 && !has('nvim')) || has('nvim-0.2.0')
-    return
-  endif
-  return 'This module requires Vim 8.0.0000 or Neovim 0.2.0'
-endfunction
-
-
 function! s:new(source) abort
   let token = {
         \ '_source': a:source,
