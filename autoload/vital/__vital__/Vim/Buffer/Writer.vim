@@ -2,13 +2,6 @@ let s:t_number = type(0)
 let s:running_writers = {}
 let s:exiting = v:false
 
-function! s:_vital_healthcheck() abort
-  if (!has('nvim') && v:version >= 800) || has('nvim-0.2.0')
-    return
-  endif
-  return 'This module requires Vim 8.0.0000 or Neovim 0.2.0'
-endfunction
-
 function! s:_vital_created(module) abort
   " Default updatetime
   let a:module.updatetime = 100

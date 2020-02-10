@@ -1,7 +1,6 @@
 *Vital/Async/Lambda.txt*	Async function collection for lambda function
 
 Author : Alisue <lambdalisue@hashnote.net>
-License: MIT license
 
 
 ==============================================================================

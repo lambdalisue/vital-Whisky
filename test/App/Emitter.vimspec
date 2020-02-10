@@ -25,7 +25,7 @@ Describe Emitter
   End
 
   Before
-    let Emitter = healthcheck#vital#import('App.Emitter')
+    let Emitter = vital#vital#import('App.Emitter')
     let guard = Guard.store([Emitter, 0])
     call Emitter.unsubscribe()
     call Emitter.remove_middleware()

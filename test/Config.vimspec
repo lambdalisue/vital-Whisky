@@ -4,7 +4,7 @@ Describe Config
   End
 
   Before
-    let Config = healthcheck#vital#import('Config')
+    let Config = vital#vital#import('Config')
     let guard = Guard.store([
           \ 'g:vital#foo',
           \ 'g:vital#bar',

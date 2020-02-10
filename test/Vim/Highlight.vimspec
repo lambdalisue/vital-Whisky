@@ -16,7 +16,7 @@ Describe Vim.Highlight
   End
 
   Before
-    let Highlight = healthcheck#vital#import('Vim.Highlight')
+    let Highlight = vital#vital#import('Vim.Highlight')
   End
 
   Describe .get([{name}])

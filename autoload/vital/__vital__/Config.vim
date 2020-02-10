@@ -5,13 +5,6 @@ let s:plugin_name = s:plugin_name =~# '^__.\+__$'
       \   ? s:plugin_name[1:]
       \   : s:plugin_name
 
-function! s:_vital_healthcheck() abort
-  if (!has('nvim') && v:version >= 800) || has('nvim-0.2.0')
-    return
-  endif
-  return 'This module requires Vim 8.0.0000 or Neovim 0.2.0'
-endfunction
-
 function! s:define(prefix, default) abort
   let prefix = a:prefix =~# '^g:' ? a:prefix : 'g:' . a:prefix
   for [key, Value] in items(a:default)

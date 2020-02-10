@@ -1,6 +1,6 @@
 Describe Async.Observable
   Before all
-    let TIMEOUT = (!empty($APPVEYOR) || !empty($TRAVIS)) ? 5000 : 500
+    let TIMEOUT = !empty($CI) ? 5000 : 500
 
     let Later = vital#vital#import('Async.Later')
     let Promise = vital#vital#import('Async.Promise')
@@ -16,7 +16,7 @@ Describe Async.Observable
   End
 
   Before
-    let Observable = healthcheck#vital#import('Async.Observable')
+    let Observable = vital#vital#import('Async.Observable')
     set verbose=1
   End
 
@@ -199,7 +199,7 @@ Describe Async.Observable
       " Interval   ^-----------------------^
       " Complete   ------------------------|
       " Time [ms]      100  200  300  400  500
-      if !empty($APPVEYOR) || !empty($TRAVIS)
+      if !empty($CI)
         let ts = [1000, 5000, 10000]
       else
         let ts = [100, 500, 1000]
@@ -222,7 +222,7 @@ Describe Async.Observable
       " Interval   ^--------^---------^
       " Complete   -------------------|
       " Time [ms]      100  200  300  400
-      if !empty($APPVEYOR) || !empty($TRAVIS)
+      if !empty($CI)
         let ts = [3000, 2000, 10000]
       else
         let ts = [300, 200, 1000]
@@ -373,7 +373,7 @@ Describe Async.Observable
 
         let b = BufferObserver()
         let s = Observable.new(funcref('Subscriber')).subscribe(b)
-        sleep 10m
+        sleep 100m
         Assert Equals(b.results, ['n:1', 'n:2', 'n:3'])
       End
 
@@ -438,12 +438,24 @@ Describe Async.Observable
           if a:o.closed()
             return
           endif
-          let timers = [
-                \ timer_start(0, { -> a:o.next(1) }),
-                \ timer_start(50, { -> a:o.next(2) }),
-                \ timer_start(100, { -> a:o.next(3) }),
-                \ timer_start(150, { -> a:o.complete() }),
-                \]
+          if !has('nvim') && has('mac')
+            " XXX
+            " It seems 'timer_start' in MacVim 8.2 is quite unstable.
+            " https://github.com/lambdalisue/vital-Whisky/runs/435185040?check_suite_focus=true
+            let timers = [
+                  \ timer_start(0, { -> a:o.next(1) }),
+                  \ timer_start(100, { -> a:o.next(2) }),
+                  \ timer_start(300, { -> a:o.next(3) }),
+                  \ timer_start(500, { -> a:o.complete() }),
+                  \]
+          else
+            let timers = [
+                  \ timer_start(0, { -> a:o.next(1) }),
+                  \ timer_start(50, { -> a:o.next(2) }),
+                  \ timer_start(100, { -> a:o.next(3) }),
+                  \ timer_start(150, { -> a:o.complete() }),
+                  \]
+          endif
           return { -> map(timers, { -> timer_stop(v:val) }) }
         endfunction
 

@@ -1,7 +1,8 @@
 *Vital/Prompt.txt*					Prompt vital module
 
 Author : Alisue <lambdalisue@hashnote.net>
-License: MIT license
+DEPRECATED
+
 
 
 ==============================================================================

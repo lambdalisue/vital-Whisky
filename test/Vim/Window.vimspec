@@ -4,7 +4,7 @@ Describe Vim.Window
   End
 
   Before
-    let Window = healthcheck#vital#import('Vim.Window')
+    let Window = vital#vital#import('Vim.Window')
     " Remove 'alternate-file' from the current window
     silent tabnew | silent tabonly | silent only
     silent %bwipeout!

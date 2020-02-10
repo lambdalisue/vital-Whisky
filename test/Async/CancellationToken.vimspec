@@ -1,6 +1,6 @@
 Describe Async.CancellationToken
   Before
-    let CancellationToken = healthcheck#vital#import('Async.CancellationToken')
+    let CancellationToken = vital#vital#import('Async.CancellationToken')
   End
 
   Describe .new({source})

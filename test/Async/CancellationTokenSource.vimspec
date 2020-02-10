@@ -1,6 +1,6 @@
 Describe Async.CancellationTokenSource
   Before
-    let CancellationTokenSource = healthcheck#vital#import('Async.CancellationTokenSource')
+    let CancellationTokenSource = vital#vital#import('Async.CancellationTokenSource')
   End
 
   Describe .new([{linked-tokens}])

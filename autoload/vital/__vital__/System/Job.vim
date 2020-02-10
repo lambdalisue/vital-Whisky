@@ -16,14 +16,6 @@ function! s:_vital_depends() abort
         \]
 endfunction
 
-function! s:_vital_healthcheck() abort
-  if has('patch-8.0.0027') || has('nvim-0.2.0')
-    return
-  endif
-  return 'This module requires Vim 8.0.0027 or Neovim 0.2.0'
-endfunction
-
-
 " Note:
 " Vim does not raise E902 on Unix system even the prog is not found so use a
 " custom exception instead to make the method compatible.

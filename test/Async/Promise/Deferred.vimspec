@@ -8,7 +8,7 @@ Describe Async.Promise.Deferred
   End
 
   Before
-    let Deferred = healthcheck#vital#import('Async.Promise.Deferred')
+    let Deferred = vital#vital#import('Async.Promise.Deferred')
   End
 
   Describe .new()

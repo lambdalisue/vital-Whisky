@@ -1,6 +1,6 @@
 Describe Async.Promise.Process
   Before all
-    let TIMEOUT = (!empty($APPVEYOR) || !empty($TRAVIS)) ? 30000 : 5000
+    let TIMEOUT = (!empty($CI)) ? 30000 : 5000
     let Deferred = vital#vital#import('Async.Promise.Deferred')
     let Promise = vital#vital#import('Async.Promise')
     let Sandbox = vital#vital#import('System.Sandbox')
@@ -17,7 +17,7 @@ Describe Async.Promise.Process
   End
 
   Before
-    let Process = healthcheck#vital#import('Async.Promise.Process')
+    let Process = vital#vital#import('Async.Promise.Process')
   End
 
   Describe .start()

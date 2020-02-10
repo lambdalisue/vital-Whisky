@@ -4,7 +4,7 @@ Describe App.Revelator
   End
 
   Before
-    let Revelator = healthcheck#vital#import('App.Revelator')
+    let Revelator = vital#vital#import('App.Revelator')
   End
 
   Describe .info()

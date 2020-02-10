@@ -3,13 +3,6 @@ let s:DEFAULT_OPTIONS = {
       \ 'range': 'tabpage',
       \}
 
-function! s:_vital_healthcheck() abort
-  if (!has('nvim') && v:version >= 800) || has('nvim-0.2.0')
-    return
-  endif
-  return 'This module requires Vim 8.0.0000 or Neovim 0.2.0'
-endfunction
-
 function! s:focus_window(expr, ...) abort
   let options = extend(copy(s:DEFAULT_OPTIONS), a:0 ? a:1 : {})
   let winid = s:_find_nearest_window_winid(a:expr, options.range)

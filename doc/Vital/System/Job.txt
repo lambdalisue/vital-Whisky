@@ -1,9 +1,6 @@
 *Vital/System/Job.txt*		A job wrapper for Vim and Neovim
 
 Author:  Alisue <lambdalisue@hashnote.net>
-License: MIT license
-Support: Vim 8.0.0027 and above (prefer 8.0.0107 and above)
-Support: Neovim 0.2.0 and above
 
 
 =============================================================================

@@ -6,14 +6,6 @@ function! s:_vital_loaded(V) abort
   let s:CancellationToken = a:V.import('Async.CancellationToken')
 endfunction
 
-function! s:_vital_healthcheck() abort
-  if (v:version >= 800 && !has('nvim')) || has('nvim-0.2.0')
-    return
-  endif
-  return 'This module requires Vim 8.0.0000 or Neovim 0.2.0'
-endfunction
-
-
 function! s:new(...) abort
   let source = {
         \ '_state': s:CancellationToken.STATE_OPEN,

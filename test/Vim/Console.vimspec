@@ -25,7 +25,7 @@ Describe Vim.Console
   End
 
   Before
-    let Console = healthcheck#vital#import('Vim.Console')
+    let Console = vital#vital#import('Vim.Console')
     let Console.prefix = ''
     message clear
   End

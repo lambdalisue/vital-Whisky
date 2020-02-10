@@ -2,13 +2,6 @@ let s:t_number = type(0)
 let s:receivers = []
 
 
-function! s:_vital_healthcheck() abort
-  if (!has('nvim') && v:version >= 800) || has('nvim-0.2.0')
-    return
-  endif
-  return 'This module requires Vim 8.0.0000 or Neovim 0.2.0'
-endfunction
-
 function! s:_vital_loaded(V) abort
   let s:Console = a:V.import('Vim.Console')
 endfunction

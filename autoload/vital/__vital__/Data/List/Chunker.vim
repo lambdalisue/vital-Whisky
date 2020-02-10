@@ -1,10 +1,3 @@
-function! s:_vital_healthcheck() abort
-  if (!has('nvim') && v:version >= 800) || has('nvim-0.2.0')
-    return
-  endif
-  return 'Data.List.Chunker requires Vim 8.0.0000 or Neovim 0.2.0'
-endfunction
-
 function! s:new(size, candidates) abort
   return {
         \ '__cursor': 0,
