@@ -1,7 +1,8 @@
 *Vital/App/Flag.txt*			Simple command argument manager.
 
 Author:  Alisue <lambdalisue@hashnote.net>
-License: MIT license
+
+DEPRECATED
 
 
 =============================================================================

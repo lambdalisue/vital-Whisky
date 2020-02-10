@@ -1,7 +1,6 @@
 *Vital/Lambda.txt*		Function collection for lambda function
 
 Author : Alisue <lambdalisue@hashnote.net>
-License: MIT license
 
 
 ==============================================================================

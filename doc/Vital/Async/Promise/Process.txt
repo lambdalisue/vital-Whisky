@@ -1,9 +1,7 @@
 *Vital.Async.Promise.Process.txt*	System.Job wrapper with Promise
 
 Author:  Alisue <lambdalisue@hashnote.net>
-License: MIT license
-Support: Vim 8.0.0107 and above
-Support: Neovim 0.2.0 and above
+
 
 =============================================================================
 CONTENTS			*Vital.Async.Promise.Process-contents*
