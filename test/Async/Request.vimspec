@@ -1,0 +1,51 @@
+let s:is_pwsh = executable('powershell') || executable('pwsh')
+let s:is_curl = executable('curl')
+let s:is_wget = executable('wget')
+
+Describe Async.Request
+  Before all
+    let TIMEOUT = 5000
+    let Path = vital#vital#import('System.Filepath')
+    let Promise = vital#vital#import('Async.Promise')
+    let Request = vital#vital#import('Async.Request')
+    let scope = themis#helper('scope')
+    let sfuncs = scope.funcs(Path.from_slash('autoload/vital/__vital__/Async/Request.vim'))
+    let clients = {
+          \ 'pwsh': get(sfuncs, '_raw_request_pwsh', v:null),
+          \ 'curl': get(sfuncs, '_raw_request_curl', v:null),
+          \ 'wget': get(sfuncs, '_raw_request_wget', v:null),
+          \}
+    lockvar clients
+  End
+
+  Context Raw request
+    It returns a raw request for http://httpbin.org/status/200
+      let request = {
+            \ 'method': 'GET',
+            \ 'url': 'http://httpbin.org/status/200',
+            \ 'redirects': 0,
+            \ 'retries': 0,
+            \ 'insecure': 0,
+            \ 'timeout': 30,
+            \ 'headers': {},
+            \}
+      for [name, Client] in items(clients)
+        if Client is# v:null
+          call themis#log(printf('%s has skipped', name))
+          continue
+        endif
+        let [r, e] = Promise.wait(
+              \ Client(request),
+              \ { 'TIMEOUT': TIMEOUT },
+              \)
+        Assert Equals(e, v:null)
+        let headers = join(r.headers, "\n")
+        let content = readfile(r.content)
+        Assert Match(headers, '\<HTTP/1.1 200 OK\>')
+        Assert Match(headers, '\<Content-Length: 0\>')
+        Assert Match(headers, '\<Content-Type: text/html; charset=utf-8\>')
+        Assert Equals(content, [])
+      endfor
+    End
+  End
+End
