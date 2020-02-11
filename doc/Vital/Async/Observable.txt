@@ -24,7 +24,10 @@ callback which defines an event stream and users can subscribe the events
 by calling "subscribe()" method.
 
 This library provides only a core part of the Observable model. If you need
-higher API for ReactiveX style programming, see |Vital.Rx.Observable|.
+higher API for ReactiveX style programming, see vital-Rx.
+
+vital-Rx:
+https://github.com/lambdalisue/vital-Rx
 
 The specifications and core implementations were ported from an observable
 proposal in TC39 (Stage 1).
