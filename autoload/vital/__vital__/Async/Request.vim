@@ -177,3 +177,29 @@ function! s:_format_headers(headers) abort
   call map(copy(a:headers), { k, v -> add(headers, printf('%s: %s', k, v)) })
   return headers
 endfunction
+
+function! s:_build_request(request) abort
+  let request = {
+        \ 'url': '',
+        \ 'method': 'GET',
+        \ 'data': '',
+        \ 'headers': {},
+        \ 'timeout': 0,
+        \ 'retries': 0,
+        \ 'redirects': 0,
+        \ 'compressed': 0,
+        \ 'auth_method': '',
+        \ 'username': '',
+        \ 'password': '',
+        \}
+  if !has_key(a:request, 'url')
+    throw 'vital: Async.Request: request must have "url" attribute'
+  endif
+  for key in uniq(sort(keys(request) + keys(a:request)))
+    if !has_key(request, key)
+      throw printf('vital: Async.Request: unknown attribute "%s" has found in request', key)
+    endif
+    let request[key] = get(a:request, key, request[key])
+  endfor
+  return request
+endfunction

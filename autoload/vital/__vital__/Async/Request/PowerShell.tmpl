@@ -1,0 +1,10 @@
+[Net.ServicePointManager]::SecurityProtocol = @( `
+    [Net.SecurityProtocolType]::Tls, `
+    [Net.SecurityProtocolType]::Tls11, `
+    [Net.SecurityProtocolType]::Tls12 `
+)
+$pass = ConvertTo-SecureString "{ password }" -AsPlainText -Force
+$cred = New-Object System.Management.Automation.PSCredential("{ username }", $pass)
+$resp = Invoke-WebRequest -Credential $cred { args }
+Write-Out $resp.Status
+Write-Out $resp.Headers

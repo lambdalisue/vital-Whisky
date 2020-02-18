@@ -1,13 +1,10 @@
-let s:is_pwsh = executable('powershell') || executable('pwsh')
-let s:is_curl = executable('curl')
-let s:is_wget = executable('wget')
-
 Describe Async.Request
   Before all
     let TIMEOUT = 5000
     let Path = vital#vital#import('System.Filepath')
     let Promise = vital#vital#import('Async.Promise')
     let Request = vital#vital#import('Async.Request')
+    let base_url = 'http://localhost'
     let scope = themis#helper('scope')
     let sfuncs = scope.funcs(Path.from_slash('autoload/vital/__vital__/Async/Request.vim'))
     let clients = {
@@ -19,21 +16,27 @@ Describe Async.Request
   End
 
   Context Raw request
-    It returns a raw request for http://httpbin.org/status/200
-      let request = {
-            \ 'method': 'GET',
-            \ 'url': 'http://httpbin.org/status/200',
-            \ 'redirects': 0,
-            \ 'retries': 0,
-            \ 'insecure': 0,
-            \ 'timeout': 30,
-            \ 'headers': {},
-            \}
-      for [name, Client] in items(clients)
+    Context PowerShell
+      Before all
+        let Client = get(sfuncs, '_raw_request_pwsh', v:null)
+      End
+
+      Before
         if Client is# v:null
-          call themis#log(printf('%s has skipped', name))
-          continue
+          Skip PowerShell does not exist on the system
         endif
+      End
+
+      It invokes raw request and return a raw response for http://httpbin.org/status/200
+        let request = {
+              \ 'method': 'GET',
+              \ 'url': 'http://httpbin.org/status/200',
+              \ 'redirects': 0,
+              \ 'retries': 0,
+              \ 'insecure': 0,
+              \ 'timeout': 30,
+              \ 'headers': {},
+              \}
         let [r, e] = Promise.wait(
               \ Client(request),
               \ { 'TIMEOUT': TIMEOUT },
@@ -45,7 +48,104 @@ Describe Async.Request
         Assert Match(headers, '\<Content-Length: 0\>')
         Assert Match(headers, '\<Content-Type: text/html; charset=utf-8\>')
         Assert Equals(content, [])
-      endfor
+      End
+
+      It invokes raw request and return a raw response for http://httpbin.org/headers
+        let request = {
+              \ 'method': 'GET',
+              \ 'url': base_url . '/headers',
+              \ 'redirects': 0,
+              \ 'retries': 0,
+              \ 'insecure': 0,
+              \ 'timeout': 30,
+              \ 'params': {},
+              \ 'data': '',
+              \ 'headers': {
+              \   'Authorization': 'Token hogehoge',
+              \ },
+              \}
+        let [r, e] = Promise.wait(
+              \ Client(request),
+              \ { 'TIMEOUT': TIMEOUT },
+              \)
+        Assert Equals(e, v:null)
+        let headers = join(r.headers, "\n")
+        let content = readfile(r.content)
+        Assert Match(headers, '\<HTTP/1.1 200 OK\>')
+        Assert Match(headers, '\<Content-Length: 0\>')
+        Assert Match(headers, '\<Content-Type: text/html; charset=utf-8\>')
+        Assert Equals(content, [])
+      End
+    End
+
+    Context cURL
+      Before all
+        let Client = get(sfuncs, '_raw_request_curl', v:null)
+      End
+
+      Before
+        if Client is# v:null
+          Skip cURL does not exist on the system
+        endif
+      End
+
+      It invokes raw request and return a raw response for http://httpbin.org/status/200
+        let request = {
+              \ 'method': 'GET',
+              \ 'url': base_url . '/status/200',
+              \ 'redirects': 0,
+              \ 'retries': 0,
+              \ 'insecure': 0,
+              \ 'timeout': 30,
+              \ 'headers': {},
+              \}
+        let [r, e] = Promise.wait(
+              \ Client(request),
+              \ { 'TIMEOUT': TIMEOUT },
+              \)
+        Assert Equals(e, v:null)
+        let headers = join(r.headers, "\n")
+        let content = readfile(r.content)
+        Assert Match(headers, '\<HTTP/1.1 200 OK\>')
+        Assert Match(headers, '\<Content-Length: 0\>')
+        Assert Match(headers, '\<Content-Type: text/html; charset=utf-8\>')
+        Assert Equals(content, [])
+      End
+    End
+
+    Context Wget
+      Before all
+        let Client = get(sfuncs, '_raw_request_wget', v:null)
+      End
+
+      Before
+        if Client is# v:null
+          Skip Wget does not exist on the system
+        endif
+      End
+
+      It invokes raw request and return a raw response for http://httpbin.org/status/200
+        let request = {
+              \ 'method': 'GET',
+              \ 'url': base_url . '/status/200',
+              \ 'redirects': 0,
+              \ 'retries': 0,
+              \ 'insecure': 0,
+              \ 'timeout': 30,
+              \ 'headers': {},
+              \}
+        let [r, e] = Promise.wait(
+              \ Client(request),
+              \ { 'TIMEOUT': TIMEOUT },
+              \)
+        Assert Equals(e, v:null)
+        let headers = join(r.headers, "\n")
+        let content = readfile(r.content)
+        Assert Match(headers, '\<HTTP/1.1 200 OK\>')
+        Assert Match(headers, '\<Content-Length: 0\>')
+        Assert Match(headers, '\<Content-Type: text/html; charset=utf-8\>')
+        Assert Equals(content, [])
+      End
     End
   End
 End
