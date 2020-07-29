@@ -83,5 +83,5 @@ endfunction
 
 function! s:_on_cancel(ns, ...) abort
   call a:ns.job.stop()
-  call a:ns.reject(s:CancellationToken.CancellationError)
+  call a:ns.reject(s:CancellationToken.CancelledError)
 endfunction

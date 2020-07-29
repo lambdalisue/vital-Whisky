@@ -59,7 +59,7 @@ cancelled (|Vital.Async.CancellationToken.none|).
 	  " Define cancellation callback
 	  function! s:on_cancel(reason) abort closure
 	    call ns.job.stop()
-	    call a:reject(s:CancellationToken.CancellationError)
+	    call a:reject(s:CancellationToken.CancelledError)
 	  endfunction
 	
 	  " Register cancellation callback
@@ -103,8 +103,8 @@ CONSTANT			*Vital.Async.CancellationToken-constant*
 .canceled
 	A token that is already been canceled.
 
-			*Vital.Async.CancellationToken.CancellationError*
-.CancellationError
+			*Vital.Async.CancellationToken.CancelledError*
+.CancelledError
 	An error string thrown when a token has cancelled.
 
 -----------------------------------------------------------------------------
