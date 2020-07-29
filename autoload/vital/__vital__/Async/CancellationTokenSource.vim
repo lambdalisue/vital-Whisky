@@ -73,5 +73,5 @@ function! s:_unlink(source) abort
 endfunction
 
 function! s:_throw(exception) abort
-  throw a:exception
+  throw substitute(a:exception, '^Vim(.*):', '', '')
 endfunction
