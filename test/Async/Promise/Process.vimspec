@@ -60,6 +60,20 @@ Describe Async.Promise.Process
             \})
     End
 
+    It starts a process and return a promise which will be rejected as a result when the program exit with non success exit status if "reject_on_failure" has specified
+      let p = Process.start(Args('exit.py', '--exitval', '1'), {
+            \ 'reject_on_failure': v:true,
+            \})
+      Assert True(Promise.is_promise(p))
+      let [r, e] = Promise.wait(p, TIMEOUT)
+      Assert Equals(Dict.omit(e, ['args']), {
+            \ 'stdout': [''],
+            \ 'stderr': [''],
+            \ 'exitval': 1,
+            \})
+      Assert Equals(r, v:null)
+    End
+
     Context stdin option
       It sends given data to the process through stdin promise when resolved (string)
         let p = Process.start(Args('reply.py'), {

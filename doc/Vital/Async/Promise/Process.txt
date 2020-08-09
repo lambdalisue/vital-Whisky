@@ -44,28 +44,33 @@ by appling command arguments like:
 FUNCTIONS			*Vital.Async.Promise.Process-functions*
 
 .start({args}[, {options}])	*Vital.Async.Promise.Process.start()*
-
 	Execute a command {args} and return a Promise instance which will
 	be resolved when the process is terminated. Note that even the process
 	has terminated with non 0 exit-status, the promise is resolved rather
-	than rejected. The promise is rejected only when the process could not
-	be started (e.g. the given executable is not found).
+	than rejected unless "reject_on_failure" option has specified. The
+	promise is rejected only when the process could not be started (e.g.
+	the given executable is not found).
 
 	The following attributes are available in {options}.
 
-	"cwd"		Force to execute a process in a given directory.
-			Otherwise the process is executed under a current
-			directory.
-	"raw"		TRUE to use raw data instead of \r removed data.
-	"stdin"		A Promise instance which resolve string or string list
-			to send messages into the process. When this promise
-			has resolved, the stdin channel will be closed.
-			Note that rejection value is not used.
-	"token"		An instance of |Vital.Async.CancellationToken| to
-			cancel process execution.
-	"abort"		A Promise instance which is used to abort the process.
-			Note that rejection value is not used.
-			WARNING deprecated.
+	"cwd"			Force to execute a process in a given
+				directory. Otherwise the process is executed
+				under a current directory.
+	"raw"			TRUE to use raw data instead of \r removed
+				data.
+	"stdin"			A Promise instance which resolve string or
+				string list to send messages into the process.
+				When this promise has resolved, the stdin
+				channel will be closed.
+				Note that rejection value is not used.
+	"token"			An instance of |Vital.Async.CancellationToken|
+				to cancel process execution.
+	"reject_on_failure"	Reject when the process exit with failure exit
+				status (non 0 exit status.) instead.
+	"abort"			A Promise instance which is used to abort the
+				process.
+				Note that rejection value is not used.
+				WARNING deprecated.
 
 	The promise instance will be resolved with an object which has the
 	following attributes.
@@ -77,7 +82,6 @@ FUNCTIONS			*Vital.Async.Promise.Process-functions*
 
 
 is_available()			*Vital.Async.Promise.Process.is_available()*
-
 	Returns TRUE when requirements for using
 	|Vital.Async.Promise.Process| are met.
 	Requirements is that |Vital.Async.Promise| and |Vital.System.Job|
@@ -90,7 +94,6 @@ is_available()			*Vital.Async.Promise.Process.is_available()*
 	    " Fallback into synchronous operations
 	  endif
 <
-
 
 =============================================================================
 vim:tw=78:fo=tcq2mM:ts=8:ft=help:norl
