@@ -28,7 +28,7 @@ Describe Async.Promise.Process
       endif
     End
 
-    It starts a process and return a promise
+    It starts a process and return a promise which will be resolved as a result
       let p = Process.start(Args('echo.py'))
       Assert True(Promise.is_promise(p))
       let [r, e] = Promise.wait(p, TIMEOUT)
@@ -40,12 +40,24 @@ Describe Async.Promise.Process
             \})
     End
 
-    It starts a process and return a promise
+    It starts a process and return a rejected promise if failed to execute the process
       let p = Process.start(['invalid-executable'])
       Assert True(Promise.is_promise(p))
       let [r, e] = Promise.wait(p, TIMEOUT)
       Assert NotEquals(e, v:null)
       Assert Equals(r, v:null)
+    End
+
+    It starts a process and return a promise which will be resolved as a result even the program exit with non success exit status
+      let p = Process.start(Args('exit.py', '--exitval', '1'))
+      Assert True(Promise.is_promise(p))
+      let [r, e] = Promise.wait(p, TIMEOUT)
+      Assert Equals(e, v:null)
+      Assert Equals(Dict.omit(r, ['args']), {
+            \ 'stdout': [''],
+            \ 'stderr': [''],
+            \ 'exitval': 1,
+            \})
     End
 
     Context stdin option
