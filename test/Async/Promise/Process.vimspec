@@ -4,6 +4,7 @@ Describe Async.Promise.Process
     let Deferred = vital#vital#import('Async.Promise.Deferred')
     let Promise = vital#vital#import('Async.Promise')
     let Sandbox = vital#vital#import('System.Sandbox')
+    let CancellationToken = vital#vital#import('Async.CancellationToken')
     let CancellationTokenSource = vital#vital#import('Async.CancellationTokenSource')
     let Path = vital#vital#import('System.Filepath')
     let Dict = vital#vital#import('Data.Dict')
@@ -161,11 +162,8 @@ Describe Async.Promise.Process
         Assert Equals(r, v:null)
         call s.cancel()
         let [r, e] = Promise.wait(p, 100)
-        Assert Equals(e, v:null)
-        Assert Equals(Dict.omit(r, ['args', 'exitval']), {
-              \ 'stdout': [''],
-              \ 'stderr': [''],
-              \})
+        Assert Equals(e, CancellationToken.CancelledError)
+        Assert Equals(r, v:null)
       End
     End
 
