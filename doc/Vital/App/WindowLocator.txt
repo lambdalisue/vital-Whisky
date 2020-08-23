@@ -1,0 +1,74 @@
+*Vital/App/WindowLocator.txt*		Utility to manage suitable window
+
+Author : Alisue <lambdalisue@hashnote.net>
+
+
+=============================================================================
+CONTENTS				*Vital.App.WindowLocator-content*
+
+INTRODUCTION				|Vital.App.WindowLocator-introduction|
+INTERFACE				|Vital.App.WindowLocator-interface|
+  FUNCTION				|Vital.App.WindowLocator-function|
+
+
+=============================================================================
+INTRODUCTION				*Vital.App.WindowLocator-introduction*
+
+*Vital.App.WindowLocator* is a |Vital| module to manage suitable windows.
+
+
+=============================================================================
+INTERFACE				*Vital.App.WindowLocator-interface*
+
+-----------------------------------------------------------------------------
+FUNCTION				*Vital.App.WindowLocator-function*
+
+				*Vital.App.WindowLocator.score()*
+.score({winnr})
+	Return a score of the window {winnr}. It returns higher score if the
+	window pass given conditions.
+
+				*Vital.App.WindowLocator.list()*
+.list()
+	Return a |List| of suitable window |winnr|.
+
+				*Vital.App.WindowLocator.find()*
+.find({origin})
+	Find a nearest suitable window from {origin} (|winnr|).
+	It returns 0 if no suitable window is found.
+
+				*Vital.App.WindowLocator.focus()*
+.focus({origin})
+	Focus a nearest suitable window from {origin} (|winnr|).
+
+				*Vital.App.WindowLocator.get_conditions()*
+get_conditions()
+	Return a current conditions (A |List| of |Function|).
+	Default:
+
+				*Vital.App.WindowLocator.set_conditions()*
+set_conditions({conditions})
+	Set a current conditions to {conditions}. The {conditions} is a |List|
+	of |Function| and each function get window information returned by
+	|getwininfo()|. For example:
+>
+	call s:WindowLocator.set_conditions([
+	      \ { wi -> !wi.loclist },
+	      \ { wi -> !wi.quickfix },
+	      \ { wi -> !getwinvar(wi.winid, '&winfixwidth', 0) },
+	      \ { wi -> !getwinvar(wi.winid, '&winfixheight', 0) },
+	      \ { wi -> !getbufvar(wi.bufnr, '&previewwindow', 0) },
+	      \])
+<
+				*Vital.App.WindowLocator.get_threshold()*
+get_threshold()
+	Return a current threshold.
+
+				*Vital.App.WindowLocator.set_threshold()*
+set_threshold({threshold})
+	Set a current threshold to {threshold}.
+	Set 0 to reset and guess threshold from current conditions.
+
+
+=============================================================================
+vim:tw=78:fo=tcq2mM:ts=8:ft=help:norl
