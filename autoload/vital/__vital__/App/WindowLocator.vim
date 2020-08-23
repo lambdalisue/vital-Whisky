@@ -81,5 +81,5 @@ function! s:get_threshold() abort
 endfunction
 
 function! s:set_threshold(threshold) abort
-  let s:threshold = a:threshld
+  let s:threshold = a:threshold
 endfunction
