@@ -1,0 +1,106 @@
+*Vital/App/Action.txt*			Action
+
+Author : Alisue <lambdalisue@hashnote.net>
+
+
+=============================================================================
+CONTENTS				*Vital.App.Action-content*
+
+INTRODUCTION				|Vital.App.Action-introduction|
+USAGE					|Vital.App.Action-usage|
+INTERFACE				|Vital.App.Action-interface|
+  FUNCTION				|Vital.App.Action-function|
+  MAPPING				|Vital.App.Action-mapping|
+
+
+=============================================================================
+INTRODUCTION				*Vital.App.Action-introduction*
+
+*Vital.App.Action* is a |Vital| module used to add "action" feature to execute
+special buffer mappings.
+
+=============================================================================
+USAGE					*Vital.App.Action-usage*
+
+Call |Vital.App.Action.init()| on a buffer where you'd like to enable the
+action feature.
+It defines buffer local mappings listed in |Vital.App.Action-mapping|.
+
+After that, define custom mappings like "<Plug>({prefix}-action-{name})" where
+{prefix} is a plugin name which is retrieved from the script path of the vital
+module and {name} is an unique name of the feature. 
+
+For example, the following define a new action "echo-hello" of "example".
+>
+	" Assume that the plugin name is 'example' and the vital module is
+	" installed in ".../autoload/vital/_example/App/Action.vim"
+	nnoremap <buffer><silent>
+	      \ <Plug>(example-action-echo-hello)
+	      \ echo "Hello"
+<
+See |Vital.App.Action.set_prefix()| if the guessed plugin name is wrong.
+
+=============================================================================
+INTERFACE				*Vital.App.Action-interface*
+
+-----------------------------------------------------------------------------
+FUNCTION				*Vital.App.Action-function*
+
+					*Vital.App.Action.get_prefix()*
+.get_prefix()
+	Return a current {prefix} |String|.
+
+					*Vital.App.Action.set_prefix()*
+.set_prefix({new_prefix})
+	Set a current {prefix} to the {new_prefix}.
+
+					*Vital.App.Action.init()*
+.init()
+	Initialize the current buffer to prepare actions.
+
+					*Vital.App.Action.call()*
+.call({name}[, {options}])
+	Call an action {name} on the current buffer.
+	The following attributes are available in {options}
+
+	"capture"	1 to enable capture mode which write output messages
+			into a new empty buffer instead
+	"verbose"	1 to execute action with 'verbose' (1) mode.
+
+					*Vital.App.Action.list()*
+.list([{conceal}])
+	Return a |List| of available actions. Each item of the list is tuple
+	like [{lhs}, {name}, {rhs}] where {lhs} is an actual mapping, {name}
+	is an action name, and {rhs} is a <Plug> mapping like:
+>
+	assert_equal(s:Action.list(), [
+	      \ ['a', 'choice', '<Plug>(example-action-choice)'],
+	      \ ['.', 'repeat', '<Plug>(example-action-repeat)'],
+	      \ ['?', 'help', '<Plug>(example-action-help)'],
+	      \ ['', 'help:all', '<Plug>(example-action-help:all)'],
+	      \])
+<
+	When {conceal} is truthy value, it remove items which contains ":" in
+	it's name and no actual mapping (like "help:all" in above example.)
+
+-----------------------------------------------------------------------------
+MAPPING						*Vital.App.Action-mapping*
+
+					*<Plug>({prefix}-action-choice)*
+<Plug>({prefix}-action-choice)
+	Open a prompt to select action to execute.
+
+					*<Plug>({prefix}-action-repeat)*
+<Plug>({prefix}-action-repeat)
+	Repeat previous executed action through the prompt.
+
+					*<Plug>({prefix}-action-help)*
+<Plug>({prefix}-action-help)
+	Show action help.
+
+					*<Plug>({prefix}-action-help:all)*
+<Plug>({prefix}-action-help:all)
+	Show all action help.
+
+=============================================================================
+vim:tw=78:fo=tcq2mM:ts=8:ft=help:norl

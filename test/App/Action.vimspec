@@ -1,0 +1,48 @@
+Describe App.Action
+  Before all
+    let Action = vital#vital#import('App.Action')
+  End
+
+  After all
+    %bwipeout!
+  End
+
+  Before
+    %bwipeout!
+  End
+
+  Describe .init()
+    It defines <Plug> mappings for actions
+      call Action.init()
+      let rs = map(
+            \ split(execute('nmap <Plug>(vital-action'), '\n'),
+            \ { -> split(v:val)[1] },
+            \)
+      Assert Equals(sort(rs), sort([
+            \ '<Plug>(vital-action-choice)',
+            \ '<Plug>(vital-action-repeat)',
+            \ '<Plug>(vital-action-help)',
+            \ '<Plug>(vital-action-help:all)',
+            \]))
+    End
+  End
+
+  Describe .call()
+    It invoke a corresponding mapping of a given name
+      function! s:map_test() abort
+        let b:called = 1
+      endfunction
+
+      nnoremap <buffer><silent> <Plug>(vital-action-test) :<C-u>call <SID>map_test()<CR>
+
+      call Action.init()
+      call Action.call('test')
+      Assert Equals(b:called, 1)
+    End
+
+    It throws exception when no corresponding mapping exists
+      call Action.init()
+      Throws /no action test found in the buffer/ Action.call('test')
+    End
+  End
+End
