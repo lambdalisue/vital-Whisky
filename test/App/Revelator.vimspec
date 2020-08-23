@@ -124,7 +124,7 @@ Describe App.Revelator
       endfunction
 
       let output = execute('call Revelator.call(dict.test_funcref, ["foo", "bar"], dict)')
-      Assert Match(output, "\nRevelation:\\['foo', 'bar']\nfunction <SNR>")
+      Assert Match(output, "\nRevelation:\\['foo', 'bar']\n.*function <SNR>")
     End
   End
 End
