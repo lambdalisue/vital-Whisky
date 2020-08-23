@@ -1,0 +1,55 @@
+*Vital/App/WindowSelector.txt*		Interface to visually select window
+
+Author : Alisue <lambdalisue@hashnote.net>
+
+
+=============================================================================
+CONTENTS				*Vital.App.WindowSelector-content*
+
+INTRODUCTION				|Vital.App.WindowSelector-introduction|
+USAGE					|Vital.App.WindowSelector-usage|
+INTERFACE				|Vital.App.WindowSelector-interface|
+  FUNCTION				|Vital.App.WindowSelector-function|
+
+
+=============================================================================
+INTRODUCTION				*Vital.App.WindowSelector-introduction*
+
+*Vital.App.WindowSelector* is a |Vital| module used to add an interface to
+select window visually.
+
+
+=============================================================================
+USAGE					*Vital.App.WindowSelector-usage*
+
+Call |Vital.App.WindowSelector.select()| with a |List| of window numbers like:
+>
+	let cancelled = s:WindowSelector.select(range(1, winnr('$')))
+<
+Then the focus has moved to the selected window or {cancelled} is 1 if user
+has cancelled.
+
+
+=============================================================================
+INTERFACE				*Vital.App.WindowSelector-interface*
+
+-----------------------------------------------------------------------------
+FUNCTION				*Vital.App.WindowSelector-function*
+
+					*Vital.App.WindowSelector.select()*
+.select({ws}[, {options}])
+	Open an interface to select window from a window number |List| {ws}.
+	It moves the focus to the selected window or return 1 when user
+	cancelled.
+	The following attributes are available in {options}.
+
+	"auto_select"		1 to automatically select window if there is 1
+				or 0 window exists.
+	"select_chars"		A |List| of |String| used as an window
+				indicator.
+	"statusline_hl"		A |String| highlight name used for statusline.
+	"indicator_hl"		A |String| highlight name used for indicator.
+
+
+=============================================================================
+vim:tw=78:fo=tcq2mM:ts=8:ft=help:norl
