@@ -15,10 +15,13 @@ A [vital.vim](https://github.com/vim-jp/vital.vim) external module collection.
 
 | Name                                                                             | Description                               | Remark     |
 | -------------------------------------------------------------------------------- | ----------------------------------------- | ---------- |
+| [`App.Action`](./doc/Vital/App/Action.txt)                                       | Add interface to select special mappings  |            |
 | [`App.Emitter`](./doc/Vital/App/Emitter.txt)                                     | An event emitter with middleware support  | Deprecated |
 | [`App.Flag`](./doc/Vital/App/Flag.txt)                                           | A simple command argument library         | Deprecated |
 | [`App.Revelator`](./doc/Vital/App/Revelator.txt)                                 | Use exception to show messages            | Deprecated |
 | [`App.Spinner`](./doc/Vital/App/Spinner.txt)                                     | ASCII spinner collection                  | Deprecated |
+| [`App.WindowLocator`](./doc/Vital/App/WindowLocator.txt)                         | Utility to manage suitable window         |            |
+| [`App.WindowSelector`](./doc/Vital/App/WindowSelector.txt)                       | Add interface to select window visually   |            |
 | [`Async.Observable.Process`](./doc/Vital/Async/Observable/Process.txt)           | `Async.Observable` based process module   |            |
 | [`Async.Promise.Deferred`](./doc/Vital/Async/Promise/Deferred.txt)               | `Async.Promise` based deferred module     |            |
 | [`Async.Promise.Process`](./doc/Vital/Async/Promise/Process.txt)                 | `Async.Promise` based process module      |            |
