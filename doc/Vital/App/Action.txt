@@ -54,6 +54,22 @@ FUNCTION				*Vital.App.Action-function*
 .set_prefix({new_prefix})
 	Set a current {prefix} to the {new_prefix}.
 
+					*Vital.App.Action.get_hiddens()*
+.get_hiddens()
+	Return a |List| of action names which should be hidden.
+
+					*Vital.App.Action.set_hiddens()*
+.set_hiddens({names})
+	Set a |List| of action names ({names}) which should be hidden.
+
+					*Vital.App.Action.get_ignores()*
+.get_ignores()
+	Return a |List| of action names which should not be listed.
+
+					*Vital.App.Action.set_ignores()*
+.set_ignores({names})
+	Set a |List| of action names ({names}) which should not be listed.
+
 					*Vital.App.Action.init()*
 .init()
 	Initialize the current buffer to prepare actions.
