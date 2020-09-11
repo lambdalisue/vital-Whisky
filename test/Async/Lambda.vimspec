@@ -64,14 +64,14 @@ Describe Async.Lambda
       let list = [5, 4, 3, 2, 1]
 
       " The first argument is value
-      let F = Lambda.map_f({ v -> v + 1 })
+      let l:F = Lambda.map_f({ v -> v + 1 })
       let [copy, e] = Promise.wait(F(list), 100)
       Assert Equals(e, v:null)
       Assert Equals(list, [5, 4, 3, 2, 1])
       Assert Equals(copy, [6, 5, 4, 3, 2])
 
       " The second argument is index
-      let F = Lambda.map_f({ _, k -> k + 1 })
+      let l:F = Lambda.map_f({ _, k -> k + 1 })
       let [copy, e] = Promise.wait(F(list), 100)
       Assert Equals(e, v:null)
       Assert Equals(list, [5, 4, 3, 2, 1])
@@ -84,14 +84,14 @@ Describe Async.Lambda
       let list = [5, 4, 3, 2, 1]
 
       " The first argument is value
-      let F = Lambda.filter_f({ v -> v % 2 is# 0 })
+      let l:F = Lambda.filter_f({ v -> v % 2 is# 0 })
       let [copy, e] = Promise.wait(F(list), 100)
       Assert Equals(e, v:null)
       Assert Equals(list, [5, 4, 3, 2, 1])
       Assert Equals(copy, [4, 2])
 
       " The second argument is index
-      let F = Lambda.filter_f({ _, k -> k % 2 is# 0 })
+      let l:F = Lambda.filter_f({ _, k -> k % 2 is# 0 })
       let [copy, e] = Promise.wait(F(list), 100)
       Assert Equals(e, v:null)
       Assert Equals(list, [5, 4, 3, 2, 1])
@@ -104,14 +104,14 @@ Describe Async.Lambda
       let list = [5, 4, 3, 2, 1]
 
       " The second argument is value
-      let F = Lambda.reduce_f({ a, v -> a + v }, 0)
+      let l:F = Lambda.reduce_f({ a, v -> a + v }, 0)
       let [value, e] = Promise.wait(F(list), 100)
       Assert Equals(e, v:null)
       Assert Equals(list, [5, 4, 3, 2, 1])
       Assert Equals(value, 15)
 
       " The thrid argument is index
-      let F = Lambda.reduce_f({ a, _, k -> a + k }, 0)
+      let l:F = Lambda.reduce_f({ a, _, k -> a + k }, 0)
       let [value, e] = Promise.wait(F(list), 100)
       Assert Equals(e, v:null)
       Assert Equals(list, [5, 4, 3, 2, 1])

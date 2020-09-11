@@ -211,7 +211,7 @@ function! s:_new_subscription(observer, subscriber) abort
 
   let observer = s:_new_subscription_observer(subscription)
   try
-    let Cleanup = a:subscriber(observer)
+    let l:Cleanup = a:subscriber(observer)
     if !empty(Cleanup)
       if type(Cleanup) is# v:t_dict && type(get(Cleanup, 'unsubscribe', v:null)) is# v:t_func
         let subscription.__cleanup = { -> Cleanup.unsubscribe() }
@@ -254,7 +254,7 @@ function! s:_subscription_unsubscribe() abort dict
 endfunction
 
 function! s:_cleanup_subscription(subscription) abort
-  let Cleanup = a:subscription.__cleanup
+  let l:Cleanup = a:subscription.__cleanup
   if empty(Cleanup)
     return
   endif

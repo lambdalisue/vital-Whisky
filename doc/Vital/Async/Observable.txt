@@ -299,7 +299,7 @@ Observable object			*Vital.Async.Observable-Observable*
 	endfunction
 
 	" Twice is an operator which multiply 2 to each value in the stream
-	let Twice = { s, ctor -> ctor(funcref('s:subscriber', [s])) }
+	let l:Twice = { s, ctor -> ctor(funcref('s:subscriber', [s])) }
 
 	call Observable.of(1, 2, 3)
 	      \.pipe(Twice, Twice, Twice)

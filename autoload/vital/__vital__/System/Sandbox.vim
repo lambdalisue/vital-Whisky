@@ -11,7 +11,7 @@ function! s:_vital_loaded(V) abort
 endfunction
 
 function! s:new(...) abort
-  let Factory = a:0 ? a:1 : function('tempname')
+  let l:Factory = a:0 ? a:1 : function('tempname')
   let sandbox = {
         \ '__home': fnamemodify(resolve(Factory()), ':p'),
         \ '__origin': fnamemodify(resolve(getcwd()), ':p'),

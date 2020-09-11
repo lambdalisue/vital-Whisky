@@ -616,7 +616,7 @@ Describe Async.Observable
                 \)
         endfunction
 
-        let Twice = { s, ctor -> ctor(funcref('Subscriber', [s])) }
+        let l:Twice = { s, ctor -> ctor(funcref('Subscriber', [s])) }
 
         let rs = []
         let o = Observable.of(1, 2, 3).pipe(

@@ -49,7 +49,7 @@ function! s:_find_nearest_window_winid(expr, range) abort
   if a:range ==# 'tabpage' || ntabpages == 1
     return win_getid(type(a:expr) == s:t_string ? winnr(a:expr) : a:expr)
   endif
-  let Distance = function('s:_distance', [tabpagenr()])
+  let l:Distance = function('s:_distance', [tabpagenr()])
   for tabpagenr in sort(range(1, ntabpages), Distance)
     let winnr = type(a:expr) == s:t_string
           \ ? tabpagewinnr(tabpagenr, a:expr)
@@ -67,7 +67,7 @@ function! s:_find_nearest_buffer_winid(expr, range) abort
   if a:range ==# 'tabpage' || ntabpages == 1
     return win_getid(bufwinnr(bufnr))
   endif
-  let Distance = function('s:_distance', [tabpagenr()])
+  let l:Distance = function('s:_distance', [tabpagenr()])
   for tabpagenr in sort(range(1, ntabpages), Distance)
     let s:base = tabpagewinnr(tabpagenr)
     let buflist = tabpagebuflist(tabpagenr)

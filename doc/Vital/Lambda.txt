@@ -18,7 +18,7 @@ void([{args}...])
 	expression in a single expression.
 >
 	" Invoke A, B, C in a single lambda function
-	let F = { -> s:Lambda.void(A(), B(), C()) }
+	let l:F = { -> s:Lambda.void(A(), B(), C()) }
 	echo F()
 	" -> 0
 <
@@ -27,7 +27,7 @@ pass({value}[, {args}...])
 	It is like |Vital.Lambda.void()| but it always returns {value}.
 >
 	" Invoke A, B, C in a single lambda function
-	let F = { -> s:Lambda.pass(v:null, A(), B(), C()) }
+	let l:F = { -> s:Lambda.pass(v:null, A(), B(), C()) }
 	echo F()
 	" -> v:null
 <
