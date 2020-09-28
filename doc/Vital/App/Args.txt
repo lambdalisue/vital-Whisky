@@ -1,0 +1,117 @@
+*Vital/App/Args.txt*			Minimal command argument manager
+
+Author:  Alisue <lambdalisue@hashnote.net>
+
+
+=============================================================================
+CONTENTS					*Vital.App.Args-contents*
+
+Introduction			|Vital.App.Args-introduction|
+Usage				|Vital.App.Args-usage|
+Functions			|Vital.App.Args-functions|
+
+
+=============================================================================
+INTRODUCTION					*Vital.App.Args-introduction*
+
+|Vital.App.Args| is minimal command argument manager which supports only the
+following two forms.
+
+	-flag		|Boolean|
+	-flag=value	|String|
+
+
+=============================================================================
+USAGE						*Vital.App.Args-usage*
+
+Use |Vital.App.Args.get()| to get an option (a value starts from "-") like:
+>
+	" Replace {your-plugin-name} to your plugin name
+	let Args = vital#{your-plugin-name}#import('App.Args')
+
+	" Use <f-args> in realworld
+	let args = ['hello', '-foo', '-bar=bar']
+
+	echo Args.get(args, 'foo', v:false)
+	" -> v:true
+	echo args
+	" -> ['hello', '-foo', '-bar=bar']
+
+	echo Args.get(args, 'bar', '')
+	" -> 'bar'
+	echo args
+	" -> ['hello', '-foo', '-bar=bar']
+<
+Or use |Vital.App.Args.pop()| to remove the option from the {args} like:
+>
+	echo Args.pop(args, 'foo', v:false)
+	" -> v:true
+	echo args
+	" -> ['hello', '-bar=bar']
+
+	echo Args.pop(args, 'bar', '')
+	" -> 'bar'
+	echo args
+	" -> ['hello']
+<
+Or set new options to the {args} by |Vital.App.Args.set()| like:
+>
+	call Args.set(args, 'foo2', v:true)
+	echo args
+	" -> ['hello', '-foo2']
+
+	call Args.set(args, 'bar2', 'bar2')
+	echo args
+	" -> ['hello', '-foo2', '-bar2=bar2]
+<
+Or update existing options of {args} like:
+>
+	call Args.set(args, 'foo2', v:false)
+	echo args
+	" -> ['hello', '-bar2=bar2]
+
+	call Args.set(args, 'bar2', 'barbar')
+	echo args
+	" -> ['hello', '-bar2=barbar]
+<
+After all, use |Vital.App.Args.throw_if_dirty()| to check all known options
+are popped properly like:
+>
+	" Below throws an exception while {args} still has '-bar2=barbar'
+	call Args.throw_if_dirty(args)
+
+	" Below does NOT throw exceptions while {args} become clean
+	call Args.pop(args, 'bar2', '')
+	call Args.throw_if_dirty(args)
+<
+
+=============================================================================
+FUNCTIONS					*Vital.App.Args-functions*
+
+						*Vital.App.Args.get()*
+.get({args}, {name}, {default})
+	Get a {name} option ("-{name}" or "-{name}=XXXXX") from {args} and
+	return the value. If the {name} option is not exists in {args}, it
+	returns {default}.
+
+						*Vital.App.Args.pop()*
+.pop({args}, {name}, {default})
+	Remove a {name} option ("-{name}" or "-{name}=XXXXX") from {args} and
+	return the value. If the {name} option is not exists in {args}, it
+	returns {default}.
+
+						*Vital.App.Args.set()*
+.set({args}, {name}, {value})
+	Set a {name} option ("-{name}" or "-{name}={value}") to {args}.
+	It add a new {name} option if the {name} option does not exist in the
+	{args}. Otherwise it update/remove the {name} option.
+
+					*Vital.App.Args.throw_if_dirty()*
+.throw_if_dirty({args}, [{prefix}])
+	Throw an exception when {args} contains any option (a value starts
+	from "-"). If {prefix} is specified, the {prefix} is prefixed to the
+	error message.
+
+
+=============================================================================
+vim:tw=78:fo=tcq2mM:ts=8:ft=help:norl

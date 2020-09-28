@@ -1,0 +1,43 @@
+Describe App.Args
+  Before all
+    let Args = vital#vital#import('App.Args')
+  End
+
+  Describe Usage
+    Before all
+      let args = ['hello', '-foo', '-bar=bar']
+    End
+
+    It follows behavior written in docs (get)
+      Assert Equals(Args.get(args, 'foo', v:false), v:true)
+      Assert Equals(args, ['hello', '-foo', '-bar=bar'])
+      Assert Equals(Args.get(args, 'bar', ''), 'bar')
+      Assert Equals(args, ['hello', '-foo', '-bar=bar'])
+    End
+
+    It follows behavior written in docs (pop)
+      Assert Equals(Args.pop(args, 'foo', v:false), v:true)
+      Assert Equals(args, ['hello', '-bar=bar'])
+      Assert Equals(Args.pop(args, 'bar', ''), 'bar')
+      Assert Equals(args, ['hello'])
+    End
+
+    It follows behavior written in docs (set)
+      call Args.set(args, 'foo2', v:true)
+      Assert Equals(args, ['hello', '-foo2'])
+      call Args.set(args, 'bar2', 'bar2')
+      Assert Equals(args, ['hello', '-foo2', '-bar2=bar2'])
+
+      call Args.set(args, 'foo2', v:false)
+      Assert Equals(args, ['hello', '-bar2=bar2'])
+      call Args.set(args, 'bar2', 'barbar')
+      Assert Equals(args, ['hello', '-bar2=barbar'])
+    End
+
+    It follows behavior written in docs (throw_if_dirty)
+      Throw /unknown option/ Args.throw_if_dirty(args)
+      call Args.pop(args, 'bar2', '')
+      call Args.throw_if_dirty(args)
+    End
+  End
+End
