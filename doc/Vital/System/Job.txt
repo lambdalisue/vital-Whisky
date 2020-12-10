@@ -167,6 +167,9 @@ start({args}[, {options}])
 	"cwd"		A current working directory of the job. Defaults to
 			|current-directory|.
 			Note that this option requires Vim 8.0.0902 or Neovim
+	"env"		An environment variable dictionary of the job.
+			Note that this option requires Vim 8.0.0902 or Neovim
+			0.5.0.
 	"on_stdout"	A callback called when the process output to stdout.
 	"on_stderr"	A callback called when the process output to stderr.
 	"on_exit"	A callback called when the process terminated.
