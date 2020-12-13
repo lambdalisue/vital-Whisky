@@ -1,0 +1,121 @@
+*Vital/Path/Filepath.txt*	Utility module for manipulating system paths
+
+
+==============================================================================
+CONTENTS				*Vital.Path.Filepath-contents*
+
+INTRODUCTION			|Vital.Path.Filepath-introduction|
+FUNCTION			|Vital.Path.Filepath-function|
+
+
+==============================================================================
+INTRODUCTION				*Vital.Path.Filepath-introduction*
+
+|Vital.Path.Filepath| is a utility module for manipulating file system paths.
+Use this module to convert file system paths to slash-separated paths and
+manipulate the paths with |Vital.Path|.
+
+
+=============================================================================
+FUNCTION 				*Vital.Path.Filepath-function*
+
+					*Vital.Path.Filepath.to_slash()*
+to_slash({path})
+	Return simplified slash (/) path (|String|) from the file system {path}.
+>
+	" On Unix
+	Filepath.to_slash('/usr/local')
+	" -> '/usr/local'
+
+	" On Windows
+	Filepath.to_slash('C:\Windows\System32')
+	" -> '/C:/Windows/System32'
+<
+					*Vital.Path.Filepath.from_slash()*
+from_slash({path})
+	Return simplified file system path (|String|) of the slash (/) {path}.
+>
+	" On Unix
+	Filepath.from_slash('/usr/local')
+	" -> '/usr/local'
+
+	" On Windows
+	Filepath.from_slash('/C:/Windows/System32')
+	" -> 'C:\Windows\System32'
+<
+					*Vital.Path.Filepath.is_root()*
+is_root({path})
+	Return 1 when the {path} is the file system root path.
+>
+	" On Unix
+	Filepath.is_root('/')
+	" -> 1
+	Filepath.is_root('')
+	" -> 0
+	Filepath.is_root('/usr/local')
+	" -> 0
+
+	" On Windows
+	Filepath.is_root('')
+	" -> 1
+	Filepath.is_root('C:\Windows\System32')
+	" -> 0
+<
+					*Vital.Path.Filepath.is_drive_root()*
+is_drive_root({path})
+	Return 1 when the {path} is the file system drive root path.
+>
+	" On Unix
+	Filepath.is_drive_root('/')
+	" -> 1
+	Filepath.is_drive_root('')
+	" -> 0
+	Filepath.is_drive_root('/usr/local')
+	" -> 0
+
+	" On Windows
+	Filepath.is_drive_root('C:\')
+	" -> 1
+	Filepath.is_drive_root('')
+	" -> 0
+	Filepath.is_drive_root('C:\Windows\System32')
+	" -> 0
+<
+					*Vital.Path.Filepath.is_absolute()*
+is_absolute({path})
+	Return 1 when the {path} is the file system absolute path.
+>
+	" On Unix
+	Filepath.is_absolute('/usr/local')
+	" -> 1
+	Filepath.is_absolute('/')
+	" -> 1
+	Filepath.is_absolute('')	" To keep behavior consistency to Win
+	" -> 1
+	Filepath.is_absolute('usr/local')
+	" -> 0
+
+	" On Windows
+	Filepath.is_absolute('C:\Windows\System32')
+	" -> 1
+	Filepath.is_absolute('C:\')
+	" -> 1
+	Filepath.is_absolute('')
+	" -> 1
+	Filepath.is_absolute('Windows\System32')
+	" -> 0
+<
+					*Vital.Path.Filepath.join()*
+join({paths})
+	Return file system joined path (|String|) of {paths}.
+>
+	" On Unix
+	Filepath.join(['/usr/local', 'bin'])
+	" -> '/usr/local/bin'
+
+	" On Windows
+	Filepath.join(['C:\Windows\System32', 'Foo'])
+	" -> 'C:\Windows\System32\Foo'
+<
+==============================================================================
+vim:tw=78:fo=tcq2mM:ts=8:ft=help:norl
