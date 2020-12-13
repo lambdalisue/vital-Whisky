@@ -1,0 +1,251 @@
+Describe Path
+  Before
+    let Path = vital#vital#import('Path')
+  End
+
+  Describe .simplify()
+    It returns an absolute path (/usr/local -> /usr/local)
+      let path = '/usr/local'
+      let want = '/usr/local'
+      let got = Path.simplify(path)
+      Assert Equals(got, want)
+    End
+
+    It returns a relative path (usr/local -> usr/local)
+      let path = 'usr/local'
+      let want = 'usr/local'
+      let got = Path.simplify(path)
+      Assert Equals(got, want)
+    End
+
+    It removes duplicate slashes (/usr//local -> /usr/local)
+      let path = '/usr//local'
+      let want = '/usr/local'
+      let got = Path.simplify(path)
+      Assert Equals(got, want)
+
+      let path = '/usr///local'
+      let want = '/usr/local'
+      let got = Path.simplify(path)
+      Assert Equals(got, want)
+    End
+
+    It removes trailing slashes (/usr/local/ -> /usr/local)
+      let path = '/usr/local/'
+      let want = '/usr/local'
+      let got = Path.simplify(path)
+      Assert Equals(got, want)
+
+      let path = '/usr/local//'
+      let want = '/usr/local'
+      let got = Path.simplify(path)
+      Assert Equals(got, want)
+    End
+
+    It removes '.' (/usr/./local -> /usr/local)
+      let path = '/usr/./local'
+      let want = '/usr/local'
+      let got = Path.simplify(path)
+      Assert Equals(got, want)
+
+      let path = '/usr/././local'
+      let want = '/usr/local'
+      let got = Path.simplify(path)
+      Assert Equals(got, want)
+
+      let path = './usr/local'
+      let want = 'usr/local'
+      let got = Path.simplify(path)
+      Assert Equals(got, want)
+    End
+
+    It removes '..' and corresponding components (/usr/../local -> /local)
+      let path = '/usr/../local'
+      let want = '/local'
+      let got = Path.simplify(path)
+      Assert Equals(got, want)
+
+      let path = '../usr/local'
+      let want = '../usr/local'
+      let got = Path.simplify(path)
+      Assert Equals(got, want)
+
+      let path = '/usr/../../local'
+      let want = '../local'
+      let got = Path.simplify(path)
+      Assert Equals(got, want)
+    End
+  End
+
+  Describe .commonpath()
+    It throws an error when {paths} contains non absolute paths
+      let paths = [
+            \ 'usr/local',
+            \]
+      Throws /must be an absolute path/ Path.commonpath(paths)
+    End
+
+    It returns a common path of among given {paths}
+      let paths = [
+            \ '/usr/local/bin/vim',
+            \ '/usr/local/openssh',
+            \ '/usr/bin/vim',
+            \]
+      let want = '/usr'
+      let got = Path.commonpath(paths)
+      Assert Equals(got, want)
+    End
+
+    It returns '/' if no common path exists
+      let paths = [
+            \ '/usr/local/bin/vim',
+            \ '/usr/local/openssh',
+            \ '/vim',
+            \]
+      let want = '/'
+      let got = Path.commonpath(paths)
+      Assert Equals(got, want)
+    End
+  End
+
+  Describe .absolute()
+    It throws an error when {base} is not absolute path
+      let base = 'home/fern'
+      let path = '/usr/local'
+      Throws /must be an absolute path/ Path.absolute(path, base)
+    End
+
+    It returns an absolute path (/usr/local,/home/fern -> /usr/local)
+      let base = '/home/fern'
+      let path = '/usr/local'
+      let want = '/usr/local'
+      let got = Path.absolute(path, base)
+      Assert Equals(got, want)
+    End
+
+    It returns an absolute path from the base (usr/local,/home/fern -> /home/fern/usr/local)
+      let base = '/home/fern'
+      let path = 'usr/local'
+      let want = '/home/fern/usr/local'
+      let got = Path.absolute(path, base)
+      Assert Equals(got, want)
+    End
+
+    It returns a simplified absolute path from the base (../../usr/local,/home/fern -> /usr/local)
+      let base = '/home/fern'
+      let path = '../../usr/local'
+      let want = '/usr/local'
+      let got = Path.absolute(path, base)
+      Assert Equals(got, want)
+    End
+
+    It throws an error when the path beyonds the base
+      let base = '/home/fern'
+      let path = '../../../usr/local'
+      Throws /beyonds/ Path.absolute(path, base)
+    End
+  End
+
+  Describe .relative()
+    It throws an error when {base} is not absolute path
+      let base = 'home/fern'
+      let path = '/usr/local'
+      Throws /must be an absolute path/ Path.relative(path, base)
+    End
+
+    It returns a relative path (usr/local,/home/fern -> usr/local)
+      let base = '/home/fern'
+      let path = 'usr/local'
+      let want = 'usr/local'
+      let got = Path.relative(path, base)
+      Assert Equals(got, want)
+    End
+
+    It returns a relative path from the base (/home/fern/usr/local,/home/fern -> /usr/local)
+      let base = '/home/fern'
+      let path = '/home/fern/usr/local'
+      let want = 'usr/local'
+      let got = Path.relative(path, base)
+      Assert Equals(got, want)
+    End
+
+    It returns a simplified relative path from the base (/usr/local,/home/fern -> ../../usr/local)
+      let base = '/home/fern'
+      let path = '/usr/local'
+      let want = '../../usr/local'
+      let got = Path.relative(path, base)
+      Assert Equals(got, want)
+    End
+  End
+
+  Describe .basename()
+    It returns '' if path is an empty string ('' -> '')
+      let path = ''
+      let want = ''
+      let got = Path.basename(path)
+      Assert Equals(got, want)
+    End
+
+    It returns '/' if path is a root ('/' -> '/')
+      let path = '/'
+      let want = '/'
+      let got = Path.basename(path)
+      Assert Equals(got, want)
+    End
+
+    It returns a last component of a {path} ('/usr/local' -> 'local')
+      let path = '/usr/local'
+      let want = 'local'
+      let got = Path.basename(path)
+      Assert Equals(got, want)
+    End
+
+    It removes trailing slashes prior to get a last component of a {path} ('/usr/local/' -> 'local')
+      let path = '/usr/local/'
+      let want = 'local'
+      let got = Path.basename(path)
+      Assert Equals(got, want)
+
+      let path = '/usr/local//'
+      let want = 'local'
+      let got = Path.basename(path)
+      Assert Equals(got, want)
+    End
+  End
+
+  Describe .dirname()
+    It returns '' if path is an empty string ('' -> '')
+      let path = ''
+      let want = ''
+      let got = Path.dirname(path)
+      Assert Equals(got, want)
+    End
+
+    It returns '/' if path is a root ('/' -> '/')
+      let path = '/'
+      let want = '/'
+      let got = Path.dirname(path)
+      Assert Equals(got, want)
+    End
+
+    It removes a last component of a {path} ('/usr/local' -> '/usr')
+      let path = '/usr/local'
+      let want = '/usr'
+      let got = Path.dirname(path)
+      Assert Equals(got, want)
+    End
+
+    It removes trailing slashes prior to remove a last component of a {path} ('/usr/local/' -> '/usr')
+      let path = '/usr/local/'
+      let want = '/usr'
+      let got = Path.dirname(path)
+      Assert Equals(got, want)
+
+      let path = '/usr/local//'
+      let want = '/usr'
+      let got = Path.dirname(path)
+      Assert Equals(got, want)
+    End
+  End
+End
+

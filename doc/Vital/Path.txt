@@ -1,0 +1,111 @@
+*Vital/Path.txt*	Utility module for manipulating slash-separated paths
+
+
+==============================================================================
+CONTENTS				*Vital.Path-contents*
+
+INTRODUCTION			|Vital.Path-introduction|
+FUNCTION			|Vital.Path-function|
+
+
+==============================================================================
+INTRODUCTION				*Vital.Path-introduction*
+
+*Vital.Path* is utility module for manipulating slash-separated paths.
+This module does not deal with Windows paths so use |Vital.Path.Filepath| to
+convert file system paths to slash-separated paths prior to manipulate.
+
+
+=============================================================================
+FUNCTION 				*Vital.Path-function*
+
+						*Vital.Path.simplify()*
+simplify({path})
+	Return simplified path (|String|) of the {path}. It will
+	1. Remove duplicate slashes
+	2. Remove trailing slashes
+	3. Remove middle '.'
+	4. Remove '..' and corresponding components
+>
+	Path.simplify("/usr//local/./bin/../../bin/")
+	" -> /usr/bin
+<
+						*Vital.Path.commonpath()*
+commonpath({paths})
+	Return a common path (|String|) among the {paths}.
+>
+	Path.commonpath([
+	      \ '/usr/local/bin/vim',
+	      \ '/usr/local/openssh',
+	      \ '/usr/bin/vim',
+	      \])
+	" -> '/usr'
+
+	Path.commonpath([
+	      \ '/usr/local/bin/vim',
+	      \ '/usr/local/openssh',
+	      \ '/vim',
+	      \])
+	" -> '/'
+<
+						*Vital.Path.absolute()*
+absolute({path}, {base})
+	Return an absolute path (|String|) of the {path} from the {base}.
+	It return the {path} as-is if the {path} is already absolute path.
+>
+	Path.absolute('usr/local', '/home/vim')
+	" -> '/home/vim/usr/local'
+
+	Path.absolute('/usr/local', '/home/vim')
+	" -> '/usr/local'
+<
+						*Vital.Path.relative()*
+relative({path}, {base})
+	Return a relative path (|String|) of the {path} from the {base}.
+	It return the {path} as-is if the {path} is already relative path.
+>
+	Path.relative('/home/vim/usr/local', '/home/vim')
+	" -> 'usr/local'
+
+	Path.relative('usr/local', '/home/vim')
+	" -> 'usr/local'
+<
+						*Vital.Path.basename()*
+basename({path})
+	Return a last component (|String|) of the {path}. It removes trailing
+	slashes prior to get the last component.
+	It returns "/" if the {path} is root and "" if the {path} is empty.
+>
+	Path.basename('/usr/local')
+	" -> 'local'
+
+	Path.basename('/usr/local//')
+	" -> 'local'
+
+	Path.basename('/')
+	" -> '/'
+
+	Path.basename('')
+	" -> ''
+<
+						*Vital.Path.dirname()*
+dirname({path})
+	Return a last component removed path (|String|) of the {path}. It
+	removes trailing slashes prior to remove a last component.
+	It returns "/" if the {path} is a root and "" if the {path} is empty.
+>
+	Path.dirname('/usr/local')
+	" -> '/usr'
+
+	Path.dirname('/usr/local//')
+	" -> '/usr'
+
+	Path.dirname('/')
+	" -> '/'
+
+	Path.dirname('')
+	" -> ''
+<
+
+==============================================================================
+vim:tw=78:fo=tcq2mM:ts=8:ft=help:norl
