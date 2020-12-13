@@ -96,6 +96,22 @@ Describe System.Job
         End
       End
     endif
+
+    if has('patch-8.0.0902') || has('nvim-0.5.0')
+      Context env option
+        It starts a job with env
+          let rs = []
+          let job = Job.start(Args('env.py', 'hello'), extend(options, {
+                \ 'on_stdout': funcref('OnReceiveText', [rs]),
+                \ 'env': {
+                \   'hello': 'world',
+                \ },
+                \}))
+          Assert Equals(job.wait(TIMEOUT), 0)
+          Assert Equals(rs, ['world', ''])
+        End
+      End
+    endif
   End
 
   Describe Callbacks
