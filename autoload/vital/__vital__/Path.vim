@@ -68,7 +68,7 @@ function! s:_simplify(path) abort
   let result = []
   for term in a:path
     if term ==# '..'
-      if empty(result) || result[-1] == '..'
+      if empty(result) || result[-1] ==# '..'
         call insert(result, '..', 0)
       else
         call remove(result, -1)
