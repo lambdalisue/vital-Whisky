@@ -1,0 +1,33 @@
+let s:is_trash_supported = vital#vital#import('Async.File').is_trash_supported()
+
+Describe Async.File
+  Before all
+    let Sandbox = vital#vital#import('System.Sandbox')
+    let Promise = vital#vital#import('Async.Promise')
+    let File = vital#vital#import('Async.File')
+  End
+
+  Before
+    let sandbox = Sandbox.new()
+  End
+
+  After
+    call sandbox.dispose()
+  End
+
+  if s:is_trash_supported
+    Describe .trash()
+      if !has('win32')
+        " Windows does not support "
+        It supports removing "
+          call writefile([], '"')
+          Assert filereadable('"')
+
+          let [r, e] = Promise.wait(File.trash('"'), 5000)
+          Assert Equals(e, v:null)
+          Assert !filereadable('"')
+        End
+      endif
+    End
+  endif
+End
