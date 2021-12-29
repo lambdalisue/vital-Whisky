@@ -1,5 +1,4 @@
-let s:is_trash_supported = vital#vital#import('Async.File').is_trash_supported()
-
+" The trash() works on background and takes time in some platform
 Describe Async.File
   Before all
     let Sandbox = vital#vital#import('System.Sandbox')
@@ -15,19 +14,36 @@ Describe Async.File
     call sandbox.dispose()
   End
 
-  if s:is_trash_supported
-    Describe .trash()
-      if !has('win32')
-        " Windows does not support "
-        It supports removing "
-          call writefile([], '"')
-          Assert filereadable('"')
-
-          let [r, e] = Promise.wait(File.trash('"'), 5000)
-          Assert Equals(e, v:null)
-          Assert !filereadable('"')
-        End
+  Describe .trash()
+    Before
+      if !File.is_trash_supported()
+        Skip 'trash' is not supported on this platform
       endif
     End
-  endif
+
+    It trash a file with '"'
+      if has('win32')
+        Skip Windows does not support '"' in filename
+      endif
+
+      call writefile([], '"')
+      Assert filereadable('"')
+
+      let [r, e] = Promise.wait(File.trash('"'), 5000)
+      Assert Equals(e, v:null)
+      Assert True(IsFileRemoved('"', 5000))
+    End
+  End
 End
+
+function! IsFileRemoved(path, timeout) abort
+  let start = reltime()
+  let timeout = a:timeout / 1000
+  while reltimefloat(reltime(start)) <= timeout
+    if !filereadable(a:path)
+      return v:true
+    endif
+    sleep 10m
+  endwhile
+  return v:false
+endfunction
