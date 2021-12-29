@@ -53,4 +53,4 @@ jobs:
           # https://github.community/t5/GitHub-Actions/TEMP-is-broken-on-Windows/m-p/30432#M427
           TMP: 'C:\Users\runneradmin\AppData\Local\Temp'
         run: |
-          ./vim-themis/bin/themis --runtimepath ./vital.vim
+          ./vim-themis/bin/themis --runtimepath ./vital.vim --reporter spec
