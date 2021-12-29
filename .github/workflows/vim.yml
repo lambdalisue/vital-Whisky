@@ -15,7 +15,16 @@ jobs:
         os:
           - macos-11
           - windows-2022
-          - ubuntu-20.04
+          # NOTE:
+          # Use 'ubuntu-18.04' for now because using 'ubuntu-20.04' cause the following error
+          #
+          #   ERROR: helper/deps: Failed fetching deps: git clone --quiet --depth 1  'https://github.com/vim-jp/vital.vim' 'test/.deps/vital.vim'
+          #   /usr/lib/git-core/git-remote-https: /tmp/.mount_vim6vy1Wm/usr/lib/x86_64-linux-gnu/libcrypt.so.1: version `XCRYPT_2.0' not found (required by /lib/x86_64-linux-gnu/libkrb5.so.26)
+          #   /usr/lib/git-core/git-remote-https: /tmp/.mount_vim6vy1Wm/usr/lib/x86_64-linux-gnu/libcrypt.so.1: version `XCRYPT_2.0' not found (required by /lib/x86_64-linux-gnu/libroken.so.18)
+          #   Error: Process completed with exit code 1.
+          #
+          # Somehow, this doesn't occured for Neovim.
+          - ubuntu-18.04
         version:
           - head
           - v8.2.0235
