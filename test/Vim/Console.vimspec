@@ -117,6 +117,12 @@ Describe Vim.Console
   End
 
   Describe .input({hl}, {msg}[, {text}, {complete}])
+    Before
+      if !empty($CI)
+        Skip Vim/Neovim seems freeze/crash when `input` is used in GitHub Actions (maybe stdin issue?)
+      endif
+    End
+
     It returns a given string
       call timer_start(0, { -> feedkeys('Hello World' . "\<CR>", 't') })
       Assert Equals(Console.input('None', 'foo'), 'Hello World')
@@ -135,6 +141,9 @@ Describe Vim.Console
 
   Describe .inputlist({hl}, {textlist})
     Before
+      if !empty($CI)
+        Skip Vim/Neovim seems freeze/crash when `input` is used in GitHub Actions (maybe stdin issue?)
+      endif
       if has('nvim')
         Skip Neovim has a bug on inputlist() https://github.com/neovim/neovim/issues/7857
       endif
@@ -227,6 +236,12 @@ Describe Vim.Console
   End
 
   Describe .ask({msg}[, {text}, {complete}])
+    Before
+      if !empty($CI)
+        Skip Vim/Neovim seems freeze/crash when `input` is used in GitHub Actions (maybe stdin issue?)
+      endif
+    End
+
     It returns a given string
       call timer_start(0, { -> feedkeys('Hello World' . "\<CR>", 't') })
       Assert Equals(Console.ask('foo'), 'Hello World')
@@ -245,6 +260,9 @@ Describe Vim.Console
 
   Describe .select({msg}, {candidates}[, {canceled}])
     Before
+      if !empty($CI)
+        Skip Vim/Neovim seems freeze/crash when `input` is used in GitHub Actions (maybe stdin issue?)
+      endif
       if has('nvim')
         Skip Neovim has a bug on inputlist() https://github.com/neovim/neovim/issues/7857
       endif
@@ -280,6 +298,12 @@ Describe Vim.Console
   End
 
   Describe .confirm({msg}[, {text}])
+    Before
+      if !empty($CI)
+        Skip Vim/Neovim seems freeze/crash when `input` is used in GitHub Actions (maybe stdin issue?)
+      endif
+    End
+
     It returns 1 if user answer y/ye/yes
       call timer_start(0, { -> feedkeys('y' . "\<CR>", 't') })
       Assert Equals(Console.confirm('foo'), 1)

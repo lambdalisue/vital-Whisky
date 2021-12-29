@@ -20,6 +20,9 @@ call themis#option('recursive', 1)
 call themis#option('reporter', 'dot')
 call themis#helper('command').with(s:assert)
 
+let s:deps = themis#helper('deps')
+call s:deps.git('vim-jp/vital.vim')
+
 call themis#log(substitute(execute('version'), '^\%(\r\?\n\)*', '', ''))
 call themis#log('-----------------------------------------------------------')
 call themis#log('has("lua"):     ' . has('lua'))

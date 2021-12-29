@@ -11,25 +11,33 @@ on:
 jobs:
   build:
     strategy:
-      fail-fast: false
       matrix:
         os:
-          - macos-latest
-          - windows-latest
-          - ubuntu-latest
+          - macos-11
+          - windows-2022
+          # NOTE:
+          # Use 'ubuntu-18.04' for now because using 'ubuntu-20.04' cause the following error
+          #
+          #   ERROR: helper/deps: Failed fetching deps: git clone --quiet --depth 1  'https://github.com/vim-jp/vital.vim' 'test/.deps/vital.vim'
+          #   /usr/lib/git-core/git-remote-https: /tmp/.mount_vim6vy1Wm/usr/lib/x86_64-linux-gnu/libcrypt.so.1: version `XCRYPT_2.0' not found (required by /lib/x86_64-linux-gnu/libkrb5.so.26)
+          #   /usr/lib/git-core/git-remote-https: /tmp/.mount_vim6vy1Wm/usr/lib/x86_64-linux-gnu/libcrypt.so.1: version `XCRYPT_2.0' not found (required by /lib/x86_64-linux-gnu/libroken.so.18)
+          #   Error: Process completed with exit code 1.
+          #
+          # Somehow, this doesn't occured for Neovim.
+          - ubuntu-18.04
         version:
-          - nightly
+          - head
           - v8.2.0235
           - v8.1.2424
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v2
       - name: Install Vim
-        uses: rhysd/action-setup-vim@v1
+        uses: thinca/action-setup-vim@v1
         id: vim
         with:
-          neovim: false
-          version: ${{ matrix.version }}
+          vim_type: Vim
+          vim_version: ${{ matrix.version }}
       - name: Download test runner
         uses: actions/checkout@v2
         with:
@@ -39,11 +47,6 @@ jobs:
         run: |
           git config --global user.name "github-action"
           git config --global user.email "github-action@example.com"
-      - name: Download dependencies
-        uses: actions/checkout@v2
-        with:
-          repository: vim-jp/vital.vim
-          path: vital.vim
       - name: Run tests
         env:
           CI: 1
@@ -54,4 +57,4 @@ jobs:
           # https://github.community/t5/GitHub-Actions/TEMP-is-broken-on-Windows/m-p/30432#M427
           TMP: 'C:\Users\runneradmin\AppData\Local\Temp'
         run: |
-          ./vim-themis/bin/themis --runtimepath ./vital.vim
+          ./vim-themis/bin/themis --reporter spec

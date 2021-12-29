@@ -91,8 +91,20 @@ Describe System.Sandbox
         call sandbox.visit('world')
         call sandbox.dispose()
         Assert PathEquals(GetCwd(), saved_cwd)
-        Assert False(isdirectory(sandbox.path()))
+        Assert True(IsDirRemoved(sandbox.path(), 5000))
       End
     End
   End
 End
+
+function! IsDirRemoved(path, timeout) abort
+  let start = reltime()
+  let timeout = a:timeout / 1000
+  while reltimefloat(reltime(start)) <= timeout
+    if !isdirectory(a:path)
+      return v:true
+    endif
+    sleep 10m
+  endwhile
+  return v:false
+endfunction
