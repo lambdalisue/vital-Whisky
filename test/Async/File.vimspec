@@ -1,4 +1,3 @@
-" The trash() works on background and takes time in some platform
 Describe Async.File
   Before all
     let Sandbox = vital#vital#import('System.Sandbox')
@@ -14,11 +13,199 @@ Describe Async.File
     call sandbox.dispose()
   End
 
+  Describe .move()
+    Before
+      if !File.is_move_supported()
+        Skip 'move' is not supported on this platform
+      endif
+    End
+
+    It move a file 'a' to 'b'
+      call writefile([], 'a')
+      Assert filereadable('a')
+
+      let [r, e] = Promise.wait(File.move('a', 'b'), 5000)
+      Assert Equals(e, v:null)
+      Assert !filereadable('a')
+      Assert filereadable('b')
+    End
+
+    It move a file 'a a' to 'b'
+      call writefile([], 'a a')
+      Assert filereadable('a a')
+
+      let [r, e] = Promise.wait(File.move('a a', 'b'), 5000)
+      Assert Equals(e, v:null)
+      Assert !filereadable('a a')
+      Assert filereadable('b')
+    End
+
+    It move a file 'a' to 'b b'
+      call writefile([], 'a')
+      Assert filereadable('a')
+
+      let [r, e] = Promise.wait(File.move('a', 'b b'), 5000)
+      Assert Equals(e, v:null)
+      Assert !filereadable('a')
+      Assert filereadable('b b')
+    End
+
+    It move a file 'a a' to 'b b'
+      call writefile([], 'a a')
+      Assert filereadable('a a')
+
+      let [r, e] = Promise.wait(File.move('a a', 'b b'), 5000)
+      Assert Equals(e, v:null)
+      Assert !filereadable('a a')
+      Assert filereadable('b b')
+    End
+  End
+
+  Describe .copy()
+    Before
+      if !File.is_copy_supported()
+        Skip 'copy' is not supported on this platform
+      endif
+    End
+
+    It copy a file 'a' to 'b'
+      call writefile([], 'a')
+      Assert filereadable('a')
+
+      let [r, e] = Promise.wait(File.copy('a', 'b'), 5000)
+      Assert Equals(e, v:null)
+      Assert filereadable('a')
+      Assert filereadable('b')
+    End
+
+    It copy a file 'a a' to 'b'
+      call writefile([], 'a a')
+      Assert filereadable('a a')
+
+      let [r, e] = Promise.wait(File.copy('a a', 'b'), 5000)
+      Assert Equals(e, v:null)
+      Assert filereadable('a a')
+      Assert filereadable('b')
+    End
+
+    It copy a file 'a' to 'b b'
+      call writefile([], 'a')
+      Assert filereadable('a')
+
+      let [r, e] = Promise.wait(File.copy('a', 'b b'), 5000)
+      Assert Equals(e, v:null)
+      Assert filereadable('a')
+      Assert filereadable('b b')
+    End
+
+    It copy a file 'a a' to 'b b'
+      call writefile([], 'a a')
+      Assert filereadable('a a')
+
+      let [r, e] = Promise.wait(File.copy('a a', 'b b'), 5000)
+      Assert Equals(e, v:null)
+      Assert filereadable('a a')
+      Assert filereadable('b b')
+    End
+  End
+
+  Describe .copy_dir()
+    Before
+      if !File.is_copy_dir_supported()
+        Skip 'copy_dir' is not supported on this platform
+      endif
+    End
+
+    It copy a directory 'a' to 'b'
+      call mkdir('a')
+      call writefile([], 'a/file')
+      Assert filereadable('a/file')
+
+      let [r, e] = Promise.wait(File.copy_dir('a', 'b'), 5000)
+      Assert Equals(e, v:null)
+      Assert filereadable('a/file')
+      Assert filereadable('b/file')
+    End
+
+    It copy a directory 'a a' to 'b'
+      call mkdir('a a')
+      call writefile([], 'a a/file')
+      Assert filereadable('a a/file')
+
+      let [r, e] = Promise.wait(File.copy_dir('a a', 'b'), 5000)
+      Assert Equals(e, v:null)
+      Assert filereadable('a a/file')
+      Assert filereadable('b/file')
+    End
+
+    It copy a directory 'a' to 'b b'
+      call mkdir('a')
+      call writefile([], 'a/file')
+      Assert filereadable('a/file')
+
+      let [r, e] = Promise.wait(File.copy_dir('a', 'b b'), 5000)
+      Assert Equals(e, v:null)
+      Assert filereadable('a/file')
+      Assert filereadable('b b/file')
+    End
+
+    It copy a directory 'a a' to 'b b'
+      call mkdir('a a')
+      call writefile([], 'a a/file')
+      Assert filereadable('a a/file')
+
+      let [r, e] = Promise.wait(File.copy_dir('a a', 'b b'), 5000)
+      Assert Equals(e, v:null)
+      Assert filereadable('a a/file')
+      Assert filereadable('b b/file')
+    End
+  End
+
   Describe .trash()
     Before
       if !File.is_trash_supported()
         Skip 'trash' is not supported on this platform
       endif
+    End
+
+    It trash a file 'a'
+      call writefile([], 'a')
+      Assert filereadable('a')
+
+      let [r, e] = Promise.wait(File.trash('a'), 5000)
+      Assert Equals(e, v:null)
+      Assert True(IsFileRemoved('a', 5000))
+    End
+
+    It trash a file 'a a'
+      call writefile([], 'a a')
+      Assert filereadable('a a')
+
+      let [r, e] = Promise.wait(File.trash('a a'), 5000)
+      Assert Equals(e, v:null)
+      Assert True(IsFileRemoved('a a', 5000))
+    End
+
+    It trash a directory 'a'
+      call mkdir('a')
+      call writefile([], 'a/file')
+      Assert filereadable('a/file')
+
+      let [r, e] = Promise.wait(File.trash('a'), 5000)
+      Assert Equals(e, v:null)
+      Assert True(IsDirRemoved('a', 5000))
+      Assert True(IsFileRemoved('a/file', 5000))
+    End
+
+    It trash a directory 'a a'
+      call mkdir('a a')
+      call writefile([], 'a a/file')
+      Assert filereadable('a a/file')
+
+      let [r, e] = Promise.wait(File.trash('a a'), 5000)
+      Assert Equals(e, v:null)
+      Assert True(IsDirRemoved('a a', 5000))
+      Assert True(IsFileRemoved('a a/file', 5000))
     End
 
     It trash a file with '"'
@@ -41,6 +228,18 @@ function! IsFileRemoved(path, timeout) abort
   let timeout = a:timeout / 1000
   while reltimefloat(reltime(start)) <= timeout
     if !filereadable(a:path)
+      return v:true
+    endif
+    sleep 10m
+  endwhile
+  return v:false
+endfunction
+
+function! IsDirRemoved(path, timeout) abort
+  let start = reltime()
+  let timeout = a:timeout / 1000
+  while reltimefloat(reltime(start)) <= timeout
+    if !isdirectory(a:path)
       return v:true
     endif
     sleep 10m
