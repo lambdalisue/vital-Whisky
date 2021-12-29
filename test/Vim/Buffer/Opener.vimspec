@@ -16,6 +16,7 @@ Describe Vim.Buffer.Opener
         let saved_splitright = &splitright
         set nosplitbelow
         set nosplitright
+        set nohidden
       End
 
       After
@@ -25,6 +26,7 @@ Describe Vim.Buffer.Opener
         if exists('saved_splitright')
           let &splitright = saved_splitright
         endif
+        set hidden&
       End
 
       It opens a new {buffer} without {opener}
