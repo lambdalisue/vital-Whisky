@@ -17,18 +17,18 @@ jobs:
           - windows-2022
           - ubuntu-20.04
         version:
-          - nightly
+          - head
           - stable
           - v0.4.3
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v2
       - name: Install Neovim
-        uses: rhysd/action-setup-vim@v1
+        uses: thinca/action-setup-vim@v1
         id: vim
         with:
-          neovim: true
-          version: ${{ matrix.version }}
+          vim_type: Neovim
+          vim_version: ${{ matrix.version }}
       - name: Download test runner
         uses: actions/checkout@v2
         with:

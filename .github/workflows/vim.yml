@@ -17,18 +17,18 @@ jobs:
           - windows-2022
           - ubuntu-20.04
         version:
-          - nightly
+          - head
           - v8.2.0235
           - v8.1.2424
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v2
       - name: Install Vim
-        uses: rhysd/action-setup-vim@v1
+        uses: thinca/action-setup-vim@v1
         id: vim
         with:
-          neovim: false
-          version: ${{ matrix.version }}
+          vim_type: Vim
+          vim_version: ${{ matrix.version }}
       - name: Download test runner
         uses: actions/checkout@v2
         with:
