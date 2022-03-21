@@ -111,7 +111,7 @@ from "exit_cb" in Vim 8 while this library waits "close_cb" when "on_stdout"
 and/or "on_stderr" are defined.
 
 -----------------------------------------------------------------------------
-PROMISE      					|Vital.System.Job-promise|
+PROMISE      					*Vital.System.Job-promise*
 
 The following example code uses |Vital.Async.Promise| to wrap process.
 Not like examples in Async.Promise, the following works on both Vim and
