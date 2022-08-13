@@ -5,6 +5,7 @@ function! s:select(winnrs, ...) abort
         \ 'statusline_hl': 'VitalWindowSelectorStatusLine',
         \ 'indicator_hl': 'VitalWindowSelectorIndicator',
         \ 'use_popup': 0,
+        \ 'popup_borderchars': has('nvim') ? ['╭', '─', '╮', '│', '╯', '─', '╰', '│'] : ['─', '│', '─', '│', '╭', '╮', '╯', '╰'],
         \}, a:0 ? a:1 : {})
   if options.auto_select && len(a:winnrs) <= 1
     call win_gotoid(len(a:winnrs) ? win_getid(a:winnrs[0]) : win_getid())
@@ -22,7 +23,7 @@ function! s:select(winnrs, ...) abort
           \ { _, v -> get(scs, v, string(v)) },
           \)
     if options.use_popup
-      call s:_popup(a:winnrs, options.select_chars)
+      call s:_popup(a:winnrs, options.select_chars, options.popup_borderchars)
       redraw!
     else
       let l:S = funcref('s:_statusline', [
@@ -64,7 +65,7 @@ if has('nvim')
     let s:_popup_winids = []
   endfunction
 
-  function! s:_popup(winnrs, chars) abort
+  function! s:_popup(winnrs, chars, borderchars) abort
     for idx in range(len(a:winnrs))
       let winnr = a:winnrs[idx]
       let char = a:chars[idx]
@@ -83,7 +84,8 @@ if has('nvim')
             \ 'row': height,
             \ 'anchor': 'NE',
             \ 'style': 'minimal',
-            \ 'border': map(['╭', '─', '╮', '│', '╯', '─', '╰', '│'], { _, v -> [v, 'NormalFloat'] }),
+            \ 'focusable': 0,
+            \ 'border': map(copy(a:borderchars), { _, v -> [v, 'NormalFloat'] }),
             \ }
       let winid = nvim_open_win(bufnr, 1, opt)
       call add(s:_popup_winids, winid)
@@ -98,7 +100,7 @@ else
     let s:_popup_winids = []
   endfunction
 
-  function! s:_popup(winnrs, chars) abort
+  function! s:_popup(winnrs, chars, borderchars) abort
     for idx in range(len(a:winnrs))
       let winnr = a:winnrs[idx]
       let char = a:chars[idx]
@@ -112,7 +114,7 @@ else
             \ 'col': col,
             \ 'line': row,
             \ 'border': [1, 1, 1, 1],
-            \ 'borderchars': ['─', '│', '─', '│', '╭', '╮', '╯', '╰'],
+            \ 'borderchars': copy(a:borderchars),
             \ }) 
       call add(s:_popup_winids, winid)
     endfor
