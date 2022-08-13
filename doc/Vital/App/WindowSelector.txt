@@ -47,6 +47,7 @@ FUNCTION				*Vital.App.WindowSelector-function*
 				or 0 window exists.
 	"select_chars"		A |List| of |String| used as an window
 				indicator.
+	"use_popup"		Use popup/float window to select window.
 	"statusline_hl"		A |String| highlight name used for statusline.
 	"indicator_hl"		A |String| highlight name used for indicator.
 
