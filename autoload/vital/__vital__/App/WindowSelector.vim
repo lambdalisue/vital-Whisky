@@ -24,7 +24,7 @@ function! s:select(winnrs, ...) abort
           \)
     if options.use_popup
       call s:_popup(a:winnrs, options.select_chars, options.popup_borderchars)
-      redraw!
+      redraw
     else
       let l:S = funcref('s:_statusline', [
             \ options.statusline_hl,
