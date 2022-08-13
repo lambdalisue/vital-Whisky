@@ -5,17 +5,13 @@ function! s:select(winnrs, ...) abort
         \ 'statusline_hl': 'VitalWindowSelectorStatusLine',
         \ 'indicator_hl': 'VitalWindowSelectorIndicator',
         \ 'use_popup': 0,
-        \ 'popup_borderchars': has('nvim') ? ['╭', '─', '╮', '│', '╯', '─', '╰', '│'] : ['─', '│', '─', '│', '╭', '╮', '╯', '╰'],
+        \ 'popup_borderchars': ['╭', '─', '╮', '│', '╯', '─', '╰', '│'],
         \}, a:0 ? a:1 : {})
   if options.auto_select && len(a:winnrs) <= 1
     call win_gotoid(len(a:winnrs) ? win_getid(a:winnrs[0]) : win_getid())
     return 0
   endif
   let length = len(a:winnrs)
-  let store = {}
-  for winnr in a:winnrs
-    let store[winnr] = getwinvar(winnr, '&statusline')
-  endfor
   try
     let scs = options.select_chars
     let chars = map(
@@ -23,9 +19,18 @@ function! s:select(winnrs, ...) abort
           \ { _, v -> get(scs, v, string(v)) },
           \)
     if options.use_popup
-      call s:_popup(a:winnrs, options.select_chars, options.popup_borderchars)
+      if len(options.popup_borderchars) != 8
+        throw printf('vital: App.WindowSelector: number of popup_borderchars must be eight')
+      endif
+
+      let borderchars = s:_normalize_popup_borderchars(options.popup_borderchars)
+      call s:_popup(a:winnrs, options.select_chars, borderchars)
       redraw
     else
+      let store = {}
+      for winnr in a:winnrs
+        let store[winnr] = getwinvar(winnr, '&statusline')
+      endfor
       let l:S = funcref('s:_statusline', [
             \ options.statusline_hl,
             \ options.indicator_hl,
@@ -37,9 +42,6 @@ function! s:select(winnrs, ...) abort
     call s:_cnoremap_all(chars)
     let n = input('choose window: ')
     call s:_cunmap_all()
-    if options.use_popup
-      call s:_clear_popups()
-    endif
     redraw | echo
     if n is# v:null
       return 1
@@ -50,9 +52,28 @@ function! s:select(winnrs, ...) abort
     endif
     call win_gotoid(win_getid(a:winnrs[n]))
   finally
-    call map(keys(store), { _, v -> setwinvar(v, '&statusline', store[v]) })
-    redrawstatus
+    if options.use_popup
+      call s:_clear_popups()
+    else
+      call map(keys(store), { _, v -> setwinvar(v, '&statusline', store[v]) })
+      redrawstatus
+    endif
   endtry
+endfunction
+
+" Convert popup window border character order to float window border character order
+function! s:_normalize_popup_borderchars(chars) abort
+  if has('nvim')
+    return a:chars
+  endif
+
+  let borderchars = repeat([''], 8)
+  " this is index for convert to float window border characters
+  let idx = [4, 0, 5, 3, 6, 2, 7, 1]
+  for i in range(len(idx))
+    let borderchars[idx[i]] = a:chars[i]
+  endfor
+  return borderchars
 endfunction
 
 let s:_popup_winids = []
