@@ -50,10 +50,15 @@ FUNCTION				*Vital.App.WindowSelector-function*
 	"use_popup"		Use popup/float window to select window.
 	"popup_borderchars"	A |List| of |String| used as an border chars of
 				popup/float window.
-				NOTE: Order of border chars in popup window is
-				different from float window.
-				Please check |popup_create-arguments| or 
-				|nvim_open_win|
+				The default border chars:
+				  "['╭', '─', '╮', '│', '╯', '─', '╰', '│']"
+				NOTE: The order of border chars in a popup
+				window is originally different from a float
+				window.
+				Please use the float window border chars
+				definition, as it is automatically converted
+				internally to the popup window border chars
+				definition.
 	"statusline_hl"		A |String| highlight name used for statusline.
 	"indicator_hl"		A |String| highlight name used for indicator.
 
