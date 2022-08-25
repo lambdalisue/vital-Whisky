@@ -22,7 +22,7 @@ function! s:select(winnrs, ...) abort
   try
     let scs = options.select_chars
     let chars = map(
-          \ range(length + 1),
+          \ range(length),
           \ { _, v -> get(scs, v, string(v)) },
           \)
 
