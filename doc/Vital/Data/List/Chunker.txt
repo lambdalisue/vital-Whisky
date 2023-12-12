@@ -21,7 +21,7 @@ improve the initial response.
 
 	function! Test() abort
 	  let candidates = range(1000)
-	  let chunker = Chunker.new(10, candidates)
+	  let chunker = s:Chunker.new(10, candidates)
 	  let chunker.bufnum = bufnr('%')
 
 	  if exists('s:timer_id')
@@ -45,11 +45,11 @@ improve the initial response.
 	    return
 	  endif
 
-	  let candidates = map(a:chunker.next(), 's:parse_candidate(v:val)')
+	  call map(candidates, 's:parse_candidate(v:val)')
 	  call append(line('$'), candidates)
 	  let s:timer_id = timer_start(
 	        \ 100,
-	        \ function('s:timer_callback', [chunker])
+	        \ function('s:timer_callback', [a:chunker])
 	        \)
 	endfunction
 
